@@ -2,19 +2,30 @@ package main
 
 import (
 	"fmt"
-	"os"
+	//	"os"
+	//	"popcount"
+	"strings"
 )
 
 func main() {
-	var s, sep string
-	//	for i := 1; i < len(os.Args); i++ {
-	for _, arg := range os.Args {
-		//		s += sep + os.Args[i]
-		s += sep + arg
-		sep = " "
-	}
-	fmt.Println(s)
-	fmt.Println("hello")
+	//	var s, sep string
+	//	//	for i := 1; i < len(os.Args); i++ {
+	//	for _, arg := range os.Args {
+	//		//		s += sep + os.Args[i]
+	//		s += sep + arg
+	//		sep = " "
+	//	}
+	//	fmt.Println(s)
+	//	fmt.Println("hello")
+
+	//	fmt.Println(popcount.PopCount(55))
+	fmt.Println(strings.Map(add1, "HAL-9000"))
+	fmt.Println(strings.Map(add1, "VMS"))
+	fmt.Println(strings.Map(add1, "Admix"))
+}
+
+func add1(r rune) rune {
+	return r + 1
 }
 
 /*
