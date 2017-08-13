@@ -2,4 +2,4 @@
 str_patten:=<a href="http://www.biquge3.com/xs/\d{5,10}/\d{5,10}.*?</a>
 str_id:=<div id="zjneirong">
 charset:=UTF-----8
-str_URL:=http://www.biquge3.com/xs/1181206
+str_URL:=http://www.biquge3.com/xs/1301315/

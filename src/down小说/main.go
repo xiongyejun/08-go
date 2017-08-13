@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -32,8 +33,12 @@ func getSet() {
 	//	for k, _ := range dic {
 	//		delete(dic, k)
 	//	}
+	file, _ := exec.LookPath(os.Args[0])
+	path := filepath.Dir(file)
 
-	f, err := os.Open("set.txt")
+	//	fmt.Println(path)
+
+	f, err := os.Open(path + "\\set.txt")
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -72,22 +77,26 @@ func handleFunc(w http.ResponseWriter, r *http.Request) {
 	}
 
 	r.ParseForm() //解析参数
-
+	ex := r.Form["exit"]
+	if len(ex) > 0 {
+		os.Exit(0)
+	}
 	//	fmt.Fprintf(w, "\npath", r.URL.Path, "\nscheme", r.URL.Scheme, r.Form["url_long"])
 	strURL := r.Form["strURL"]
-
 	if len(strURL) == 0 {
 		fmt.Fprintf(w, "没有url")
 		return
 	}
+
+	fmt.Fprintf(w, "<style type=\"text/css\"> body {font-size:24px;line-height:1.5;}</style>  <body bgcolor=\"#C7EDCC\"> ")
+	// 插入退出按钮
+	fmt.Fprintf(w, exitHtml())
 	// 如果请求中含有strURL，就去获取strURL地址的网页源码
 	str_html := getHtml(strURL[0])
 	isDir := r.Form["dir"]
 	if len(isDir) == 0 {
-		fmt.Fprintf(w, "<style type=\"text/css\"> body {font-size:24px;line-height:1.5;}</style>  <body bgcolor=\"#C7EDCC\"> ")
 		str_html = getHtmlId(str_html, dic["str_id"]) // "<div id=\"zjneirong\">")
 		fmt.Fprintf(w, str_html)
-		fmt.Fprintf(w, "</body>")
 	} else {
 		// 如果是目录，就按照正则获取所有需要的章节
 		str_patten := dic["str_patten"] //"<a href=\"http:\\/\\/www\\.biquge3\\.com\\/xs\\/1181206/\\d{8,8}\\.htm.*?第.{1,6}.*?<\\/a>"
@@ -104,6 +113,7 @@ func handleFunc(w http.ResponseWriter, r *http.Request) {
 		}
 		fmt.Fprintf(w, str_html)
 	}
+	fmt.Fprintf(w, "</body>")
 }
 
 func getHtmlId(strHtml string, id string) string {
@@ -149,4 +159,9 @@ func gbkToUtf8(b []byte) ([]byte, error) {
 		return nil, e
 	}
 	return d, nil
+}
+
+func exitHtml() string {
+	//	return "<button type=\"button\" onclick=\"window.location.href('http://localhost:9090/?exit=1')\">Exit</button><br>"
+	return "<a href=\"http://localhost:9090/?exit=1\">Exit</a><br><br>"
 }
