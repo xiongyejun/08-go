@@ -18,8 +18,10 @@ import (
 )
 
 var dic = map[string]string{}
+var pid int
 
 func main() {
+	pid = os.Getpid()
 	getSet()
 	openURL("http://localhost:9090/?strURL=" + dic["str_URL"] + "^&dir=1")
 
@@ -88,7 +90,8 @@ func handleFunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "<style type=\"text/css\"> body {font-size:24px;line-height:1.5;}</style>  <body bgcolor=\"#C7EDCC\"> ")
+	fmt.Fprintf(w, "<!DOCTYPE html>\n<html>\n")
+	fmt.Fprintf(w, "<style type=\"text/css\"> body {font-size:24px;line-height:1.5;}</style>\n <body onunload=\"closeGo()\" bgcolor=\"#C7EDCC\">\n ")
 	// 插入退出按钮
 	fmt.Fprintf(w, exitHtml())
 	// 如果请求中含有strURL，就去获取strURL地址的网页源码
@@ -111,9 +114,11 @@ func handleFunc(w http.ResponseWriter, r *http.Request) {
 		} else {
 			str_html = strings.Replace(str_html, "href=\"", "href=\"http://localhost:9090/?strURL="+strURL[0], 99999)
 		}
-		fmt.Fprintf(w, str_html)
+		fmt.Fprintf(w, str_html, '\n')
 	}
-	fmt.Fprintf(w, "</body>")
+	fmt.Fprintf(w, "</body>\n")
+	fmt.Fprintf(w, jsExecCmd(fmt.Sprintf("TaskKill /PID %d", pid)))
+	fmt.Fprintf(w, "</html>")
 }
 
 func getHtmlId(strHtml string, id string) string {
@@ -125,7 +130,7 @@ func getHtmlId(strHtml string, id string) string {
 
 	if len(arr) > 1 {
 		str := arr[1]
-		arr = strings.Split(str, "<div>")
+		arr = strings.Split(str, "<div")
 		if len(arr) > 1 {
 			str = arr[0]
 		}
@@ -162,6 +167,22 @@ func gbkToUtf8(b []byte) ([]byte, error) {
 }
 
 func exitHtml() string {
-	//	return "<button type=\"button\" onclick=\"window.location.href('http://localhost:9090/?exit=1')\">Exit</button><br>"
-	return "<a href=\"http://localhost:9090/?exit=1\">Exit</a><br><br>"
+	return "<button type=\"button\" onclick=\"closeGo()\">Exit</button><br>\n"
+	//	return "<a href=\"javascript:void(0);\" onclick=\"closeGo()\">Exit</a><br><br>"
+}
+
+// cmd.exe /c TaskKill /PID 123
+func jsExecCmd(strCmd string) string {
+	var str string
+
+	str = fmt.Sprintf("<script type=\"text/javascript\">\n")
+	str = fmt.Sprintf("%sfunction closeGo() {\n", str)
+	str = fmt.Sprintf("%s    alert(\"test1\");\n", str)
+	str = fmt.Sprintf("%s    var cmd = new ActiveXObject(\"WScript.Shell\");\n", str)
+	str = fmt.Sprintf("%s    cmd.run(\"%s\");\n", str, strCmd)
+	//	str = fmt.Sprintf("%s    cmd = null;\n", str)
+	str = fmt.Sprintf("%s    alert(\"test2\");\n", str)
+	str = fmt.Sprintf("%s}\n", str)
+	str = fmt.Sprintf("%s</script>\n", str)
+	return str
 }
