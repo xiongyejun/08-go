@@ -159,6 +159,7 @@ func (dlg *fileDialog) show(fun func(ofn *oPENFILENAME) bool, flags int32) (bool
 		if errno != 0 {
 			abort("CommDlgExtendedError", int(errno))
 		}
+		return false, nil
 	}
 
 	if flags&OFN_ALLOWMULTISELECT > 0 {

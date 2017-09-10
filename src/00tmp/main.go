@@ -2,21 +2,12 @@ package main
 
 import (
 	"fmt"
-	"pkgAPI/comdlg32"
+	"os"
 )
 
 func main() {
-	opf := comdlg32.NewFileDialog()
-
-	//	opf.GetOpenFileNames()
-
-	//	fmt.Println(opf)
-	//	fmt.Println(opf.FilePath)
-	//	for _, r := range opf.FilePaths {
-	//		fmt.Println(r)
-	//	}
-
-	opf.GetSaveFileName()
-	fmt.Println(opf.FilePath)
+	f, _ := os.OpenFile("msg.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
+	f.WriteString(fmt.Sprintln("a<'", "msg"))
+	f.Close()
 
 }
