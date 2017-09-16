@@ -5,11 +5,24 @@ type zipFile struct {
 	fileByte *[]byte
 }
 
-func (zf *zipFile) ReadFileByte() {
-
+func (xf zipFile) GetCFStruct() *cfStruct {
+	return nil
 }
 
-func (zf *zipFile) reWriteFile() {
+func (zf zipFile) readFileByte() error {
+	return nil
+}
+
+func (zf zipFile) GetFileByte() *[]byte {
+	return nil
+}
+func (zf zipFile) GetFileName() string {
+	return zf.fileName
+}
+func (zf zipFile) GetFileSize() int32 {
+	return 1
+}
+func (zf zipFile) reWriteFile() {
 
 }
 

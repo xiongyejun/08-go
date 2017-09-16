@@ -2,12 +2,24 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"pkgAPI/comdlg32"
+	"pkgMySelf/compdocFile"
 )
 
 func main() {
-	f, _ := os.OpenFile("msg.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
-	f.WriteString(fmt.Sprintln("a<'", "msg"))
-	f.Close()
+	fd := comdlg32.NewFileDialog()
+	b, _ := fd.GetOpenFileName()
+	if !b {
+		return
+	}
+
+	fileName := fd.FilePath
+	fmt.Println(fileName)
+	if compdocFile.CheckCompdocFile(fileName) {
+		cf := compdocFile.NewXlsFile(fileName)
+		compdocFile.CFInit(cf)
+
+		fmt.Println("size", cf.GetFileSize())
+	}
 
 }
