@@ -29,7 +29,7 @@ func (xf *xlsFile) GetFileSize() int32 {
 
 func (xf *xlsFile) readFileByte() (err error) {
 	getCfHeader(xf.cfs, xf.fileName)
-	xf.fileSize = int32(math.Pow(2, float64(xf.cfs.header.sector_size))) * xf.cfs.header.sat_count * 128 // 1个分区表最多记录128个id
+	xf.fileSize = int32(math.Pow(2, float64(xf.cfs.header.Sector_size))) * xf.cfs.header.Sat_count * 128 // 1个分区表最多记录128个id
 	xf.cfs.fileByte = make([]byte, xf.fileSize)
 	f, err := os.Open(xf.fileName)
 	if err != nil {
@@ -50,6 +50,20 @@ func (xf *xlsFile) readFileByte() (err error) {
 
 func (xf *xlsFile) reWriteFile() {
 
+}
+func (xf *xlsFile) GetModuleString(strModuleName string) string {
+	if streamIndex, ok := xf.cfs.dic[strModuleName]; ok {
+		if dirInfoIndex, ok2 := xf.cfs.dicModule[strModuleName]; ok2 {
+			b := xf.cfs.arrStream[streamIndex].stream.Bytes()[xf.cfs.arrDirInfo[dirInfoIndex].textOffset+1:]
+			b = unCompressStream(b)
+			b, _ = gbkToUtf8(b)
+			return string(b)
+		} else {
+			return "不存在的模块名称。"
+		}
+
+	}
+	return "不存在的目录名称。"
 }
 
 func NewXlsFile(fileName string) *xlsFile {

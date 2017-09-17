@@ -3,13 +3,10 @@ package compdocFile
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io/ioutil"
 	"os"
-	"pkgAPI/kernel32"
-	//	"strings"
-	"unsafe"
-
 	"pkgMySelf/ucs2T0utf8"
 
 	"golang.org/x/text/encoding/simplifiedchinese"
@@ -51,10 +48,10 @@ func CheckCompdocFile(fileName string) bool {
 
 func getCfHeader(cfs *cfStruct, fileName string) {
 	f, _ := os.Open(fileName)
-	var iSizeHeader uintptr = unsafe.Sizeof(cfs.header)
-	var b = make([]byte, int(iSizeHeader))
+	iSizeHeader := binary.Size(cfs.header)
+	var b = make([]byte, iSizeHeader)
 	f.Read(b)
-	kernel32.MoveMemory(unsafe.Pointer(&cfs.header), unsafe.Pointer(&b[0]), iSizeHeader)
+	byte2struct(b, &cfs.header)
 }
 
 func CFInit(c cf) (err error) {
@@ -85,56 +82,75 @@ func CFInit(c cf) (err error) {
 	if err != nil {
 		return err
 	}
-	printTest(c.GetCFStruct())
+	err = getDirInfo(c.GetCFStruct())
+	if err != nil {
+		return err
+	}
 
+	return nil
+}
+
+func getDirInfo(cfs *cfStruct) (err error) {
+	dirIndex := cfs.dic["dir"]
+	b := cfs.arrStream[dirIndex].stream.Bytes()[:cfs.arrDir[dirIndex].Stream_size]
+	b = unCompressStream(b[1:]) // 解压的时候要跳过第1个标志位
+
+	cfs.arrDirInfo = getModuleInfo(b)
+	cfs.dicModule = make(map[string]int32, 10)
+	for i := 0; i < len(cfs.arrDirInfo); i++ {
+		cfs.dicModule[cfs.arrDirInfo[i].name] = int32(i)
+	}
 	return nil
 }
 
 func printTest(cfs *cfStruct) {
 	for i := 0; i < len(cfs.arrDir); i++ {
-		b := cfs.arrDir[i].dir_name[:cfs.arrDir[i].len_name-2]
-		b = ucs2T0utf8.UCS2toUTF8(b)
+		b := cfs.arrDir[i].Dir_name[:cfs.arrDir[i].Len_name-2]
+		b, err := ucs2T0utf8.UCS2toUTF8(b)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 		name := string(b)
-		//		name = strings.Replace(name, string([]byte{0}), "", -1)
-		fmt.Println(name)
-		fmt.Printf("% X\n", b)
+		//		fmt.Println(name)
 
-		//		if name == "PROJECT" {
-		//			b, _ := gbkToUtf8(cfs.arrStream[i].stream.Bytes())
+		//				if name == "PROJECT" {
+		//					b, _ := gbkToUtf8(cfs.arrStream[i].stream.Bytes())
+		//					fmt.Println(string(b))
+		//				}
 
-		//			fmt.Println(string(b))
-		//		}
+		if name == "dir" {
+			b := cfs.arrStream[i].stream.Bytes()[:cfs.arrDir[i].Stream_size]
+			fmt.Println("dirstream=", len(b))
+			b = unCompressStream(b[1:]) // 解压的时候要跳过第1个标志位
 
-		//		if name == "dir" {
-		//			b, _ := unCompressStream(cfs.arrStream[i].stream.Bytes()[1:])
-
-		//			fmt.Println(string(b))
-		//			arrDirInfo := getModuleInfo(b)
-
-		//			for j := 0; j < len(arrDirInfo); j++ {
-		//				fmt.Println(arrDirInfo[j].name)
-		//			}
-		//		}
+			arrDirInfo := getModuleInfo(b)
+			fmt.Println(len(arrDirInfo))
+			for j := 0; j < len(arrDirInfo); j++ {
+				fmt.Println(arrDirInfo[j].name)
+			}
+		}
 	}
 }
 
 // 获取主分区表
 func getMSAT(cfs *cfStruct) (err error) {
-	cfs.arrMSAT = make([]int32, cfs.header.sat_count)
+	cfs.arrMSAT = make([]int32, cfs.header.Sat_count)
 
 	for i := 0; i < 109; i++ {
-		if cfs.header.arr_sid[i] == -1 {
+		if cfs.header.Arr_sid[i] == -1 {
 			return nil
 		}
-		cfs.arrMSAT[i] = cfs.header.arr_sid[i]
+		cfs.arrMSAT[i] = cfs.header.Arr_sid[i]
 	}
 
 	// 获取109个另外的
 	p_MSAT := 109
-	nextSID := cfs.header.msat_first_sid
+	nextSID := cfs.header.Msat_first_sid
 	for {
 		arr := [128]int32{}
-		kernel32.MoveMemory(unsafe.Pointer(&arr[0]), unsafe.Pointer(&cfs.fileByte[CFHEADER_SIZE+CFHEADER_SIZE*nextSID]), uintptr(CFHEADER_SIZE))
+		byte2struct(cfs.fileByte[CFHEADER_SIZE+CFHEADER_SIZE*nextSID:], &arr)
+		//		kernel32.MoveMemory(unsafe.Pointer(&arr[0]), unsafe.Pointer(&cfs.fileByte[CFHEADER_SIZE+CFHEADER_SIZE*nextSID]), uintptr(CFHEADER_SIZE))
 
 		for i := 0; i < 127; i++ {
 			if arr[i] == -1 {
@@ -155,11 +171,14 @@ func getMSAT(cfs *cfStruct) (err error) {
 
 // 获取分区表
 func getSAT(cfs *cfStruct) (err error) {
-	cfs.arrSAT = make([]int32, cfs.header.sat_count*128)
+	cfs.arrSAT = make([]int32, cfs.header.Sat_count*128)
+	tmpArrSat := [128]int32{}
 	pSAT := 0
 	var i int32 = 0
-	for ; i < cfs.header.sat_count; i++ {
-		kernel32.MoveMemory(unsafe.Pointer(&cfs.arrSAT[pSAT]), unsafe.Pointer(&cfs.fileByte[CFHEADER_SIZE+CFHEADER_SIZE*cfs.arrMSAT[i]]), uintptr(CFHEADER_SIZE))
+	for ; i < cfs.header.Sat_count; i++ {
+		byte2struct(cfs.fileByte[CFHEADER_SIZE+CFHEADER_SIZE*cfs.arrMSAT[i]:], &tmpArrSat)
+		//		kernel32.MoveMemory(unsafe.Pointer(&cfs.arrSAT[pSAT]), unsafe.Pointer(&cfs.fileByte[CFHEADER_SIZE+CFHEADER_SIZE*cfs.arrMSAT[i]]), uintptr(CFHEADER_SIZE))
+		copy(cfs.arrSAT[pSAT:], tmpArrSat[:])
 		pSAT += 128
 	}
 	return nil
@@ -167,13 +186,14 @@ func getSAT(cfs *cfStruct) (err error) {
 
 // 获取目录
 func getDir(cfs *cfStruct) (err error) {
-	pSID := cfs.header.dir_first_sid
-	cfs.arrDir = make([]cfDir, 0)
+	pSID := cfs.header.Dir_first_sid
+	cfs.arrDir = make([]cfDir, 0, 10)
 	var pDir int32 = 0
 
 	for pSID != -2 {
 		tmpDir := cfDir{}
-		kernel32.MoveMemory(unsafe.Pointer(&tmpDir.dir_name[0]), unsafe.Pointer(&cfs.fileByte[CFHEADER_SIZE+CFHEADER_SIZE*pSID+DIR_SIZE*(pDir%4)]), uintptr(DIR_SIZE))
+		byte2struct(cfs.fileByte[CFHEADER_SIZE+CFHEADER_SIZE*pSID+DIR_SIZE*(pDir%4):], &tmpDir)
+		//		kernel32.MoveMemory(unsafe.Pointer(&tmpDir.dir_name[0]), unsafe.Pointer(&cfs.fileByte[CFHEADER_SIZE+CFHEADER_SIZE*pSID+DIR_SIZE*(pDir%4)]), uintptr(DIR_SIZE))
 		cfs.arrDir = append(cfs.arrDir, tmpDir)
 		pDir++
 		if pDir%4 == 0 {
@@ -187,14 +207,14 @@ func getDir(cfs *cfStruct) (err error) {
 // 获取短扇区分区表
 func getSSAT(cfs *cfStruct) (err error) {
 	var nSSAT int32 = 0
-	if cfs.header.ssat_count == 0 {
+	if cfs.header.Ssat_count == 0 {
 		return
 	}
 	// 根目录的 stream_size 表示短流存放流的大小，每64个为一个short sector
-	nSSAT = cfs.arrDir[0].stream_size / 64
+	nSSAT = cfs.arrDir[0].Stream_size / 64
 	cfs.arrSSAT = make([]int32, nSSAT)
 	// 短流起始SID
-	pSID := cfs.arrDir[0].first_SID
+	pSID := cfs.arrDir[0].First_SID
 	var i int32 = 0
 	for ; i < nSSAT; i++ {
 		// 指向偏移地址，实际地址要加上 &file_byte[0]
@@ -213,17 +233,28 @@ func getStream(cfs *cfStruct) (err error) {
 	var i int32 = 0
 	var n int32 = int32(len(cfs.arrDir))
 	cfs.arrStream = make([]*cfStream, n)
+	cfs.dic = make(map[string]int32, 10)
 
 	for ; i < n; i++ {
-		if cfs.arrDir[i].cfType == 2 && cfs.arrDir[i].first_SID != -1 {
+		b := cfs.arrDir[i].Dir_name[:cfs.arrDir[i].Len_name-2]
+		b, err := ucs2T0utf8.UCS2toUTF8(b)
+		if err != nil {
+			return err
+		}
+		name := string(b)
+		cfs.dic[name] = i //记录每个dir name 所在的下标
+		cfs.arrStream[i] = new(cfStream)
+		cfs.arrStream[i].name = name
+
+		if cfs.arrDir[i].CfType == 2 && cfs.arrDir[i].First_SID != -1 {
 			// 1仓 2流 5根
-			cfs.arrStream[i] = new(cfStream)
+
 			cfs.arrStream[i].stream = bytes.NewBuffer([]byte{})
-			if cfs.arrDir[i].stream_size < cfs.header.min_stream_size {
+			if cfs.arrDir[i].Stream_size < cfs.header.Min_stream_size {
 				// short_sector，是短流
 				cfs.arrStream[i].step = 64
-				var shortSID int32 = cfs.arrDir[i].first_SID
-				for int32(len(cfs.arrStream[i].stream.Bytes())) < cfs.arrDir[i].stream_size {
+				var shortSID int32 = cfs.arrDir[i].First_SID
+				for int32(len(cfs.arrStream[i].stream.Bytes())) < cfs.arrDir[i].Stream_size {
 					cfs.arrStream[i].address = append(cfs.arrStream[i].address, cfs.arrSSAT[shortSID])
 					cfs.arrStream[i].stream.Write(cfs.fileByte[cfs.arrSSAT[shortSID] : cfs.arrSSAT[shortSID]+64])
 					shortSID++
@@ -231,13 +262,14 @@ func getStream(cfs *cfStruct) (err error) {
 
 			} else {
 				cfs.arrStream[i].step = 512
-				var pSID int32 = cfs.arrDir[i].first_SID
-				for int32(len(cfs.arrStream[i].stream.Bytes())) < cfs.arrDir[i].stream_size {
+				var pSID int32 = cfs.arrDir[i].First_SID
+				for int32(len(cfs.arrStream[i].stream.Bytes())) < cfs.arrDir[i].Stream_size {
 					cfs.arrStream[i].address = append(cfs.arrStream[i].address, CFHEADER_SIZE+CFHEADER_SIZE*pSID)
 					cfs.arrStream[i].stream.Write(cfs.fileByte[CFHEADER_SIZE+CFHEADER_SIZE*pSID : CFHEADER_SIZE+CFHEADER_SIZE*pSID+512])
 					pSID = cfs.arrSAT[pSID]
 				}
 			}
+
 		}
 
 	}
