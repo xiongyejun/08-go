@@ -43,16 +43,20 @@ func unCompressStream(compressByre []byte) (unCompressByte []byte) {
 	ntdll := syscall.NewLazyDLL("NTDLL.dll")
 	tdb := ntdll.NewProc("RtlDecompressBuffer")
 
-	var outSize int32 = 0
-	k := 5
-	unCompressByte = make([]byte, k*len(compressByre))
-	//	for outSize
-	tdb.Call(2,
-		uintptr(unsafe.Pointer(&unCompressByte[0])),
-		uintptr(len(unCompressByte)),
-		uintptr(unsafe.Pointer(&compressByre[0])),
-		uintptr(len(unCompressByte)),
-		uintptr(unsafe.Pointer(&outSize)))
+	var k int32 = 1
+	iLen := int32(len(compressByre))
+	var outSize int32 = iLen + 1
+
+	for k*iLen <= outSize || outSize == 4096 {
+		k++
+		unCompressByte = make([]byte, k*iLen)
+		tdb.Call(2,
+			uintptr(unsafe.Pointer(&unCompressByte[0])),
+			uintptr(len(unCompressByte)),
+			uintptr(unsafe.Pointer(&compressByre[0])),
+			uintptr(len(unCompressByte)),
+			uintptr(unsafe.Pointer(&outSize)))
+	}
 
 	return unCompressByte[:outSize]
 }

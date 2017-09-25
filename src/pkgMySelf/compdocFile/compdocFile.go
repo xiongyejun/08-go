@@ -3,7 +3,6 @@ package compdocFile
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -14,15 +13,16 @@ import (
 )
 
 // 复合文档接口
-type cf interface {
+type CF interface {
 	readFileByte() error
 	reWriteFile()
 
 	GetFileName() string
 	GetFileByte() *[]byte
-	GetFileSize() int32
+	GetFileSize() uint64
 
 	GetCFStruct() *cfStruct
+	GetModuleString(strModuleName string) string
 }
 
 const (
@@ -31,7 +31,7 @@ const (
 )
 
 // 判断是否是复合文档
-func CheckCompdocFile(fileName string) bool {
+func IsCompdocFile(fileName string) bool {
 	var id []byte = make([]byte, 8)
 	f, _ := os.Open(fileName)
 	defer f.Close()
@@ -46,17 +46,24 @@ func CheckCompdocFile(fileName string) bool {
 	return true
 }
 
-func getCfHeader(cfs *cfStruct, fileName string) {
+func IsZip(fileName string) bool {
+	b := make([]byte, 2)
 	f, _ := os.Open(fileName)
-	iSizeHeader := binary.Size(cfs.header)
-	var b = make([]byte, iSizeHeader)
+	defer f.Close()
 	f.Read(b)
-	byte2struct(b, &cfs.header)
+	if b[0] == 'P' && b[1] == 'K' {
+		return true
+	}
+	return false
 }
 
-func CFInit(c cf) (err error) {
+func CFInit(c CF) (err error) {
 	fmt.Println("cfinit")
-	c.readFileByte()
+
+	err = c.readFileByte()
+	if err != nil {
+		return err
+	}
 
 	err = getMSAT(c.GetCFStruct())
 	if err != nil {
@@ -154,7 +161,7 @@ func getMSAT(cfs *cfStruct) (err error) {
 
 		for i := 0; i < 127; i++ {
 			if arr[i] == -1 {
-				break
+				return
 			}
 
 			cfs.arrMSAT[p_MSAT] = arr[i]
@@ -236,8 +243,12 @@ func getStream(cfs *cfStruct) (err error) {
 	cfs.dic = make(map[string]int32, 10)
 
 	for ; i < n; i++ {
+		if 0 == cfs.arrDir[i].Len_name { // dir读取的时候可能出现空的dir
+			continue
+		}
 		b := cfs.arrDir[i].Dir_name[:cfs.arrDir[i].Len_name-2]
 		b, err := ucs2T0utf8.UCS2toUTF8(b)
+
 		if err != nil {
 			return err
 		}

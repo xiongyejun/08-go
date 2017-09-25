@@ -1,14 +1,17 @@
 package compdocFile
 
 import (
-	"math"
+	"encoding/binary"
+	"io"
 	"os"
 )
 
 type xlsFile struct {
 	fileName string
-	fileSize int32
+	fileSize uint64
 	cfs      *cfStruct
+
+	rc io.ReadCloser
 }
 
 func (xf *xlsFile) GetCFStruct() *cfStruct {
@@ -23,29 +26,30 @@ func (xf *xlsFile) GetFileByte() *[]byte {
 	return &xf.cfs.fileByte
 }
 
-func (xf *xlsFile) GetFileSize() int32 {
+func (xf *xlsFile) GetFileSize() uint64 {
 	return xf.fileSize
 }
 
-func (xf *xlsFile) readFileByte() (err error) {
-	getCfHeader(xf.cfs, xf.fileName)
-	xf.fileSize = int32(math.Pow(2, float64(xf.cfs.header.Sector_size))) * xf.cfs.header.Sat_count * 128 // 1个分区表最多记录128个id
-	xf.cfs.fileByte = make([]byte, xf.fileSize)
-	f, err := os.Open(xf.fileName)
+func (this *xlsFile) readFileByte() (err error) {
+	f, err := os.Open(this.fileName)
 	if err != nil {
-		return err
+		return
+	}
+	fi, err := f.Stat()
+
+	if err != nil {
+		return
 	}
 	defer f.Close()
 
-	n, err := f.Read(xf.cfs.fileByte)
-	if err != nil {
-		return err
-	}
+	this.fileSize = uint64(fi.Size())
+	this.cfs.fileByte = make([]byte, this.fileSize)
+	f.Read(this.cfs.fileByte)
 
-	xf.fileSize = int32(n)
-	xf.cfs.fileByte = xf.cfs.fileByte[:n]
+	iSizeHeader := binary.Size(this.cfs.header)
+	byte2struct(this.cfs.fileByte[:iSizeHeader], &this.cfs.header)
 
-	return nil
+	return
 }
 
 func (xf *xlsFile) reWriteFile() {

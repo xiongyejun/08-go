@@ -21,7 +21,6 @@ package ucs2T0utf8
 import (
 	"bytes"
 	"errors"
-	//	"encoding/binary"
 )
 
 const (
@@ -55,9 +54,7 @@ func UCS2toUTF8(bUCS2 []byte) ([]byte, error) {
 		ub1 := uint16(bUCS2[i+1])
 		ub2 := uint16(bUCS2[i])
 
-		var b uint16 = (ub1 << 8) + ub2 // 读2个
-		//		buf2 := bytes.NewBuffer(bUCS2[i : i+2])
-		//		binary.Read(buf2, binary.LittleEndian, &b)
+		var b uint16 = (ub1 << 8) | ub2 // 读2个
 
 		if b <= 0x007f {
 			buf.WriteByte(byte(b))

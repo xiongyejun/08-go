@@ -42,8 +42,9 @@ type cfDir struct {
 }
 
 type cfStruct struct {
-	fileByte []byte   // 文件的byte
-	header   cfHeader // 文件头部512个字节
+	fileByte   []byte   // 文件的byte
+	header     cfHeader // 文件头部512个字节
+	byteHeader []byte   // rc io.ReadCloser读取头结构获取文件大小时，向前移动了位置，要保留下来
 
 	arrMSAT   []int32     // 主分区表
 	arrSAT    []int32     // 分区表
