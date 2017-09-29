@@ -9,7 +9,7 @@ import (
 type dirInfo struct {
 	name       string
 	textOffset int32 // stream中开始的位置
-	moduleType int32
+	moduleType int16
 }
 
 type projectModules struct {
@@ -70,6 +70,11 @@ type moduleCookie struct {
 	Id     int16 // 必须是0x002C
 	Size   int32 // 必须是 0x00000002
 	Cookie int16 // MUST be 0xFFFF on write
+}
+type moduleType struct {
+	Id int16 //       '0x0021  procedural module
+	// '0x0022 document module, class module, or designer module
+	Reserved int32 //'必须是 0x00000000。必须忽略
 }
 
 func getModuleInfo(dirStream []byte) (arrDirInfo []dirInfo) {
@@ -155,6 +160,12 @@ func getModuleInfo(dirStream []byte) (arrDirInfo []dirInfo) {
 		// 跳过ModuleCookie
 		module_Cookie := moduleCookie{}
 		pDirStream += int32(binary.Size(module_Cookie))
+
+		// 读取Moduletypoe
+		module_type := moduleType{}
+		byte2struct(dirStream[pDirStream:], &module_type)
+		pDirStream += int32(binary.Size(module_type))
+		arrDirInfo[i].moduleType = module_type.Id
 
 		//            '这2个不一定有！
 		//            ''跳过ModuleReadonly

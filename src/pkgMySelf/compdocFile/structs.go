@@ -46,15 +46,16 @@ type cfStruct struct {
 	header     cfHeader // 文件头部512个字节
 	byteHeader []byte   // rc io.ReadCloser读取头结构获取文件大小时，向前移动了位置，要保留下来
 
-	arrMSAT   []int32     // 主分区表
-	arrSAT    []int32     // 分区表
-	arrDir    []cfDir     // 目录
-	arrStream []*cfStream // 目录对应的流
-	arrSSAT   []int32     // 短分区表
+	arrMSAT    []int32     // 主分区表
+	arrSAT     []int32     // 分区表
+	arrDir     []cfDir     // 目录
+	arrDirAddr []int32     // 目录的filebyte位置
+	arrStream  []*cfStream // 目录对应的流
+	arrSSAT    []int32     // 短分区表
 
 	arrDirInfo []dirInfo
-	dic        map[string]int32
-	dicModule  map[string]int32
+	dic        map[string]int32 // 记录流在arrStream里的位置
+	dicModule  map[string]int32 // 记录模块在arrDirInfo里的位置
 }
 
 type cfStream struct {

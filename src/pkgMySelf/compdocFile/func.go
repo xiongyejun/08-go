@@ -4,8 +4,14 @@ package compdocFile
 import (
 	"bytes"
 	"encoding/binary"
+	"io/ioutil"
 	"syscall"
 	"unsafe"
+
+	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/transform"
+
+	"github.com/axgle/mahonia"
 )
 
 func byte2struct(b []byte, pStruct interface{}) {
@@ -67,3 +73,19 @@ func unCompressStream(compressByre []byte) (unCompressByte []byte) {
 //                    ByVal BuffUnCompressed As IntPtr, ByVal UnCompSize As Integer,
 //                    ByVal BuffCompressed As IntPtr, ByVal CompBuffSize As Integer,
 //                    ByRef OutputSize As Integer) As Integer
+
+func gbkToUtf8(b []byte) ([]byte, error) {
+	reader := transform.NewReader(bytes.NewReader(b), simplifiedchinese.GBK.NewDecoder())
+	d, e := ioutil.ReadAll(reader)
+	if e != nil {
+		return nil, e
+	}
+	return d, nil
+
+	//			simplifiedchinese.HZGB2312.NewDecoder()
+}
+
+func utf8ToGbk(src string) string {
+	srcCoder := mahonia.NewEncoder("gbk")
+	return srcCoder.ConvertString(src)
+}

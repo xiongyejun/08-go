@@ -12,12 +12,14 @@ import (
 )
 
 type ls struct {
-	dir      string
-	subDir   bool
-	fullName bool
-	sep      string
-	numDir   int32
-	numFile  int32
+	dir          string
+	subDir       bool
+	fScanDir     func(d string, entryName string)
+	fullName     bool
+	fGetFileName func(d string, entryName string) string
+	sep          string
+	numDir       int32
+	numFile      int32
 
 	chanDir  chan string  // 控制搜索
 	chanFile chan outType // 控制输出
@@ -36,8 +38,14 @@ var l ls
 //var chanEnd chan int
 
 func main() {
-	_, err := os.Stat(l.dir)
+	// 判断dir是否存在
+	finfo, err := os.Stat(l.dir)
 	if err != nil {
+		fmt.Println("不存在的文件夹。")
+		return
+	}
+	if !finfo.IsDir() {
+		fmt.Println(l.dir, " 不是文件夹。")
 		return
 	}
 
@@ -47,7 +55,7 @@ func main() {
 	go l.scanDir(l.dir)
 
 	l.cd = colorPrint.NewColorDll()
-	l.intExtColor()
+	l.initExtColor()
 
 	go l.printOut()
 	time.Sleep(1e8)
@@ -58,7 +66,7 @@ func main() {
 }
 
 func init() {
-	str, _ := os.Getwd() // 获得cmd命令行的路径
+	str, _ := os.Getwd() // 获得cmd命令行cd的路径
 	var strDir = flag.String("d", str, "scan dir path")
 	var subDir = flag.Bool("s", false, "scan sub dir")
 	var fullName = flag.Bool("b", false, "full name")
@@ -70,6 +78,19 @@ func init() {
 	if string(l.dir[len(l.dir)-1]) != l.sep {
 		l.dir = l.dir + l.sep
 	}
+	// 在这里判断是否要遍历子文件夹
+	if l.subDir {
+		l.fScanDir = scanSubDir
+	} else {
+		l.fScanDir = scanNoSubDir
+	}
+	// 在这里判断是否要带路径的文件名
+	if l.fullName {
+		l.fGetFileName = getFullName
+	} else {
+		l.fGetFileName = getName
+	}
+
 	fmt.Printf("%#v\r\n", l)
 }
 
@@ -88,19 +109,25 @@ func (this *ls) scanDir(dirName string) {
 		outtype.isDir = false
 		if entry.IsDir() {
 			outtype.isDir = true
-			if this.subDir {
-				d := dirName + entry.Name() + this.sep
-				go l.scanDir(d)
-			}
+			this.fScanDir(dirName, entry.Name())
 		}
-
-		if this.fullName {
-			outtype.name = dirName + entry.Name()
-		} else {
-			outtype.name = entry.Name()
-		}
+		outtype.name = this.fGetFileName(dirName, entry.Name())
 		this.chanFile <- outtype
 	}
+}
+
+func scanSubDir(d string, entryName string) {
+	go l.scanDir(d + entryName + l.sep)
+}
+func scanNoSubDir(d string, entryName string) {
+
+}
+
+func getFullName(d string, entryName string) string {
+	return d + entryName
+}
+func getName(d string, entryName string) string {
+	return entryName
 }
 
 func (this *ls) printOut() {
@@ -122,7 +149,7 @@ func (this *ls) printOut() {
 	}
 }
 
-func (this *ls) intExtColor() {
+func (this *ls) initExtColor() {
 	this.dicExtColor = make(map[string]uintptr)
 	this.dicExtColor[".xls"] = colorPrint.DarkMagenta
 	this.dicExtColor[".xlsm"] = colorPrint.DarkMagenta

@@ -4,18 +4,14 @@ package compdocFile
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"pkgMySelf/ucs2T0utf8"
-
-	"golang.org/x/text/encoding/simplifiedchinese"
-	"golang.org/x/text/transform"
 )
 
 // 复合文档接口
 type CF interface {
 	readFileByte() error
-	reWriteFile()
+	reWriteFile() error
 
 	GetFileName() string
 	GetFileByte() *[]byte
@@ -23,6 +19,10 @@ type CF interface {
 
 	GetCFStruct() *cfStruct
 	GetModuleString(strModuleName string) string
+	GetModuleName() []string
+	PrintAllCode()
+	UnProtectProject() (err error)
+	HideModule(moduleName string) (err error)
 }
 
 const (
@@ -58,8 +58,6 @@ func IsZip(fileName string) bool {
 }
 
 func CFInit(c CF) (err error) {
-	fmt.Println("cfinit")
-
 	err = c.readFileByte()
 	if err != nil {
 		return err
@@ -195,13 +193,16 @@ func getSAT(cfs *cfStruct) (err error) {
 func getDir(cfs *cfStruct) (err error) {
 	pSID := cfs.header.Dir_first_sid
 	cfs.arrDir = make([]cfDir, 0, 10)
+	cfs.arrDirAddr = make([]int32, 0, 10)
 	var pDir int32 = 0
 
 	for pSID != -2 {
 		tmpDir := cfDir{}
-		byte2struct(cfs.fileByte[CFHEADER_SIZE+CFHEADER_SIZE*pSID+DIR_SIZE*(pDir%4):], &tmpDir)
+		tmp := CFHEADER_SIZE + CFHEADER_SIZE*pSID + DIR_SIZE*(pDir%4)
+		byte2struct(cfs.fileByte[tmp:], &tmpDir)
 		//		kernel32.MoveMemory(unsafe.Pointer(&tmpDir.dir_name[0]), unsafe.Pointer(&cfs.fileByte[CFHEADER_SIZE+CFHEADER_SIZE*pSID+DIR_SIZE*(pDir%4)]), uintptr(DIR_SIZE))
 		cfs.arrDir = append(cfs.arrDir, tmpDir)
+		cfs.arrDirAddr = append(cfs.arrDirAddr, tmp)
 		pDir++
 		if pDir%4 == 0 {
 			pSID = cfs.arrSAT[pSID]
@@ -280,21 +281,9 @@ func getStream(cfs *cfStruct) (err error) {
 					pSID = cfs.arrSAT[pSID]
 				}
 			}
-
 		}
 
 	}
 
 	return nil
-}
-
-func gbkToUtf8(b []byte) ([]byte, error) {
-	reader := transform.NewReader(bytes.NewReader(b), simplifiedchinese.GBK.NewDecoder())
-	d, e := ioutil.ReadAll(reader)
-	if e != nil {
-		return nil, e
-	}
-	return d, nil
-
-	//			simplifiedchinese.HZGB2312.NewDecoder()
 }
