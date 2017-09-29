@@ -15,3 +15,4 @@
 - [ui1](https://github.com/visualfc/goqt "UI")
 - [ui2](https://github.com/google/gxui "https://github.com/google/gxui")
 - [二维码](https://github.com/skip2/go-qrcode "https://github.com/skip2/go-qrcode")
+- [编码转换](github.com/axgle/mahonia)
