@@ -23,6 +23,7 @@ type CF interface {
 	PrintAllCode()
 	UnProtectProject() (err error)
 	HideModule(moduleName string) (err error)
+	UnHideModule(moduleName string) (err error)
 }
 
 const (

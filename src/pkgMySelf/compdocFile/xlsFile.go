@@ -60,11 +60,61 @@ func (me *xlsFile) UnProtectProject() (err error) {
 // 清除vba工程密码
 func (me *xlsFile) unProtectProject() (err error) {
 	// "CMG", "DPB", "GC"
-	pattern := `CMG="[A-Z\d]+"\r\n|DPB="[A-Z\d]+"\r\n|GC="[A-Z\d]+"\r\n`
-	err = me.modifyProject(pattern, false)
+	if streamIndex, ok := me.cfs.dic["PROJECT"]; ok {
+		// 读取PROJECT的byte
+		b := me.cfs.arrStream[streamIndex].stream.Bytes()
+		var b1 []byte
+		pattern := `CMG="[A-Z\d]+"\r\n|DPB="[A-Z\d]+"\r\n|GC="[A-Z\d]+"\r\n`
+
+		if bMatch, _ := regexp.Match(pattern, b); !bMatch {
+			err = errors.New("err:没有找到查找的内容。")
+			return
+		}
+		reg, err := regexp.Compile(pattern)
+		if err != nil {
+			return err
+		}
+		// 替换后的byte
+		b1 = reg.ReplaceAll(b, []byte{})
+		err = me.modifyProject(b, b1, streamIndex)
+		if err != nil {
+			err = errors.New(err.Error() + "破解工程密码出错。")
+			return err
+		}
+	} else {
+		return errors.New("未找到PROJECT。")
+	}
+	return nil
+}
+
+// 取消隐藏模块
+func (me *xlsFile) UnHideModule(moduleName string) (err error) {
+	err = me.unHideModule(moduleName)
 	if err != nil {
-		err = errors.New(err.Error() + "破解工程密码出错。")
 		return
+	}
+	return me.reWriteFile()
+}
+func (me *xlsFile) unHideModule(moduleName string) (err error) {
+	// HelpFile="" 在这个前面添加 Module=moduleNameODOA
+	if streamIndex, ok := me.cfs.dic["PROJECT"]; ok {
+		// 读取PROJECT的byte
+		b := me.cfs.arrStream[streamIndex].stream.Bytes()
+		bModule := []byte(utf8ToGbk(`Module=` + moduleName))
+		bModule = append(bModule, '\r')
+		bModule = append(bModule, '\n')
+
+		bOld := []byte(`HelpFile=""`)
+		bNew := make([]byte, len(bModule)+len(bOld))
+		copy(bNew[0:], bModule)
+		copy(bNew[len(bModule):], bOld)
+
+		b1 := bytes.Replace(b, bOld, bNew, 1)
+		fmt.Println("b=", len(b), "b1=", len(b1))
+		err = me.modifyProject(b, b1, streamIndex)
+		return err
+	} else {
+		return errors.New("未找到PROJECT。")
 	}
 	return nil
 }
@@ -87,72 +137,58 @@ func (me *xlsFile) hideModule(moduleName string) (err error) {
 		}
 
 		pattern := `Module=` + moduleName // + `\r\n` //|` + moduleName + `.*?\r\n`
-		err = me.modifyProject(pattern, true)
+		if streamIndex, ok := me.cfs.dic["PROJECT"]; ok {
+			// 读取PROJECT的byte
+			b := me.cfs.arrStream[streamIndex].stream.Bytes()
+			var b1 []byte
 
-		if err != nil {
-			err = errors.New(err.Error() + "隐藏模块出错。")
-			return
-		}
-		return nil
-	} else {
-		return errors.New("不存在的模块名称。")
-	}
-}
-
-// 修改PROJECT目录流，主要是清除工程密码、隐藏模块等需要
-// pattern	需要在PROJECT中查找并替换为空的内容
-func (me *xlsFile) modifyProject(pattern string, notRegxp bool) (err error) {
-	if streamIndex, ok := me.cfs.dic["PROJECT"]; ok {
-		// 读取PROJECT的byte
-		b := me.cfs.arrStream[streamIndex].stream.Bytes()
-		var b1 []byte
-
-		if notRegxp {
 			pattern = utf8ToGbk(pattern)
 			bReplace := []byte(pattern)
 			bReplace = append(bReplace, '\r')
 			bReplace = append(bReplace, '\n')
 			b1 = bytes.Replace(b, bReplace, []byte{}, -1)
-		} else {
-			if bMatch, _ := regexp.Match(pattern, b); !bMatch {
-				err = errors.New("err:没有找到查找的内容。")
+			err = me.modifyProject(b, b1, streamIndex)
+
+			if err != nil {
+				err = errors.New(err.Error() + "隐藏模块出错。")
 				return
 			}
-			reg, err := regexp.Compile(pattern)
-			if err != nil {
-				return err
-			}
-			// 替换后的byte
-			b1 = reg.ReplaceAll(b, []byte{})
+			return nil
+		} else {
+			return errors.New("未找到PROJECT。")
 		}
 
-		// b2保持大小不变，方便复制到filebyte
-		b2 := make([]byte, len(b))
-		copy(b2, b1)
-		// 修改替换后的文件byte
-		for i, v := range me.cfs.arrStream[streamIndex].address {
-			bStart := int32(i) * me.cfs.arrStream[streamIndex].step
-			bEnd := bStart + me.cfs.arrStream[streamIndex].step
-			copy(me.cfs.fileByte[v:], b2[bStart:bEnd])
-		}
-		// 修改dir中的Stream_size
-		// b中实际仅有me.cfs.arrDir[streamIndex].Stream_size的大小，但是为了上面循环方便按照step复制，在这里来扣除多余的
-		iSub := int32(len(b)) - me.cfs.arrDir[streamIndex].Stream_size
-		var iLen int32 = int32(len(b1)) - iSub
-		// int32转byte
-		buf := bytes.NewBuffer([]byte{})
-		binary.Write(buf, binary.LittleEndian, &iLen)
-		// 内存中的数据也修改下
-		me.cfs.arrDir[streamIndex].Stream_size = iLen
-		// fileByte的下标
-		indexStreamSize := me.cfs.arrDirAddr[streamIndex] + DIR_SIZE - 8 // -8是因为在倒数第2个，减2个int32
-		copy(me.cfs.fileByte[indexStreamSize:], buf.Bytes())
-
-		return err
 	} else {
-		err = errors.New("没有找到VBAproject")
+		return errors.New("不存在的模块名称。")
 	}
-	return
+	return nil
+}
+
+// 修改PROJECT目录流，主要是清除工程密码、隐藏模块等需要
+func (me *xlsFile) modifyProject(oldB, newB []byte, streamIndex int32) (err error) {
+	// b2保持大小不变，方便复制到filebyte
+	b2 := make([]byte, len(oldB))
+	copy(b2, newB)
+	// 修改替换后的文件byte
+	for i, v := range me.cfs.arrStream[streamIndex].address {
+		bStart := int32(i) * me.cfs.arrStream[streamIndex].step
+		bEnd := bStart + me.cfs.arrStream[streamIndex].step
+		copy(me.cfs.fileByte[v:], b2[bStart:bEnd])
+	}
+	// 修改dir中的Stream_size
+	// b中实际仅有me.cfs.arrDir[streamIndex].Stream_size的大小，但是为了上面循环方便按照step复制，在这里来扣除多余的
+	iSub := int32(len(oldB)) - me.cfs.arrDir[streamIndex].Stream_size
+	var iLen int32 = int32(len(newB)) - iSub
+	// int32转byte
+	buf := bytes.NewBuffer([]byte{})
+	binary.Write(buf, binary.LittleEndian, &iLen)
+	// 内存中的数据也修改下
+	me.cfs.arrDir[streamIndex].Stream_size = iLen
+	// fileByte的下标
+	indexStreamSize := me.cfs.arrDirAddr[streamIndex] + DIR_SIZE - 8 // -8是因为在倒数第2个，减2个int32
+	copy(me.cfs.fileByte[indexStreamSize:], buf.Bytes())
+
+	return err
 }
 
 // 在清除工程密码、隐藏模块后等操作后，将filebyte重新保存文件
@@ -171,8 +207,14 @@ func (me *xlsFile) reWriteFile() (err error) {
 
 func (me *xlsFile) GetModuleName() (modules []string) {
 	modules = make([]string, len(me.cfs.arrDirInfo))
+	var strType string
 	for i := 0; i < len(me.cfs.arrDirInfo); i++ {
-		modules[i] = me.cfs.arrDirInfo[i].name
+		if me.cfs.arrDirInfo[i].moduleType == 0x21 {
+			strType = "标准模块"
+		} else {
+			strType = "类模块"
+		}
+		modules[i] = me.cfs.arrDirInfo[i].name + "\t" + strType
 	}
 	return
 }

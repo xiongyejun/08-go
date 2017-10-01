@@ -15,6 +15,14 @@ type zipFile struct {
 	vbaProjectIndex int
 }
 
+// 取消隐藏模块
+func (me *zipFile) UnHideModule(moduleName string) (err error) {
+	err = me.unHideModule(moduleName)
+	if err != nil {
+		return
+	}
+	return me.reWriteFile()
+}
 func (me *zipFile) UnProtectProject() (err error) {
 	err = me.unProtectProject()
 	if err != nil {
