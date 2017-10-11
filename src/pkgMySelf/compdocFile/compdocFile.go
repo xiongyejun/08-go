@@ -21,6 +21,7 @@ type CF interface {
 	GetModuleString(strModuleName string) string
 	GetModuleName() []string
 	PrintAllCode()
+	GetAllCode() string
 	UnProtectProject() (err error)
 	HideModule(moduleName string) (err error)
 	UnHideModule(moduleName string) (err error)
@@ -99,7 +100,7 @@ func CFInit(c CF) (err error) {
 func getDirInfo(cfs *cfStruct) (err error) {
 	dirIndex := cfs.dic["dir"]
 	b := cfs.arrStream[dirIndex].stream.Bytes()[:cfs.arrDir[dirIndex].Stream_size]
-	b = unCompressStream(b[1:]) // 解压的时候要跳过第1个标志位
+	b = unCompressStream(b[:]) // 注意：如果使用API解压的时候要跳过第1个标志位
 
 	cfs.arrDirInfo = getModuleInfo(b)
 	cfs.dicModule = make(map[string]int32, 10)
@@ -248,13 +249,19 @@ func getStream(cfs *cfStruct) (err error) {
 		if 0 == cfs.arrDir[i].Len_name { // dir读取的时候可能出现空的dir
 			continue
 		}
+		// 读取name的byte
 		b := cfs.arrDir[i].Dir_name[:cfs.arrDir[i].Len_name-2]
 		b, err := ucs2T0utf8.UCS2toUTF8(b)
-
 		if err != nil {
 			return err
 		}
 		name := string(b)
+
+		// 窗体的时候，会出现2个在dir中，但是type1个是2,1个是1
+		if _, ok := cfs.dic[name]; ok {
+			// 存在了就不执行后面语句
+			continue
+		}
 		cfs.dic[name] = i //记录每个dir name 所在的下标
 		cfs.arrStream[i] = new(cfStream)
 		cfs.arrStream[i].name = name
@@ -267,7 +274,7 @@ func getStream(cfs *cfStruct) (err error) {
 				// short_sector，是短流
 				cfs.arrStream[i].step = 64
 				var shortSID int32 = cfs.arrDir[i].First_SID
-				for int32(len(cfs.arrStream[i].stream.Bytes())) < cfs.arrDir[i].Stream_size {
+				for int32(cfs.arrStream[i].stream.Len()) < cfs.arrDir[i].Stream_size {
 					cfs.arrStream[i].address = append(cfs.arrStream[i].address, cfs.arrSSAT[shortSID])
 					cfs.arrStream[i].stream.Write(cfs.fileByte[cfs.arrSSAT[shortSID] : cfs.arrSSAT[shortSID]+64])
 					shortSID++
@@ -276,7 +283,7 @@ func getStream(cfs *cfStruct) (err error) {
 			} else {
 				cfs.arrStream[i].step = 512
 				var pSID int32 = cfs.arrDir[i].First_SID
-				for int32(len(cfs.arrStream[i].stream.Bytes())) < cfs.arrDir[i].Stream_size {
+				for int32(cfs.arrStream[i].stream.Len()) < cfs.arrDir[i].Stream_size {
 					cfs.arrStream[i].address = append(cfs.arrStream[i].address, CFHEADER_SIZE+CFHEADER_SIZE*pSID)
 					cfs.arrStream[i].stream.Write(cfs.fileByte[CFHEADER_SIZE+CFHEADER_SIZE*pSID : CFHEADER_SIZE+CFHEADER_SIZE*pSID+512])
 					pSID = cfs.arrSAT[pSID]

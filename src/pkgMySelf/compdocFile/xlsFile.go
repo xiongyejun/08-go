@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"pkgMySelf/colorPrint"
 	"regexp"
+	"strings"
 )
 
 type xlsFile struct {
@@ -222,7 +223,7 @@ func (me *xlsFile) GetModuleName() (modules []string) {
 func (xf *xlsFile) GetModuleString(strModuleName string) string {
 	if streamIndex, ok := xf.cfs.dic[strModuleName]; ok {
 		if dirInfoIndex, ok2 := xf.cfs.dicModule[strModuleName]; ok2 {
-			b := xf.cfs.arrStream[streamIndex].stream.Bytes()[xf.cfs.arrDirInfo[dirInfoIndex].textOffset+1:]
+			b := xf.cfs.arrStream[streamIndex].stream.Bytes()[xf.cfs.arrDirInfo[dirInfoIndex].textOffset:]
 			b = unCompressStream(b)
 			b, _ = gbkToUtf8(b)
 			return string(b)
@@ -243,7 +244,7 @@ func (me *xlsFile) PrintAllCode() {
 		cd.SetColor(colorPrint.White, colorPrint.DarkGreen)
 		fmt.Print("\r\n")
 		if streamIndex, ok := me.cfs.dic[v.name]; ok {
-			b := me.cfs.arrStream[streamIndex].stream.Bytes()[v.textOffset+1:]
+			b := me.cfs.arrStream[streamIndex].stream.Bytes()[v.textOffset:]
 			b = unCompressStream(b)
 			b, _ = gbkToUtf8(b)
 			fmt.Print(string(b))
@@ -253,6 +254,21 @@ func (me *xlsFile) PrintAllCode() {
 	}
 }
 
+func (me *xlsFile) GetAllCode() string {
+	str := make([]string, 0)
+
+	for i, v := range me.cfs.arrDirInfo {
+
+		str = append(str, fmt.Sprintf("%2d--------%s.moduleType(33是标准模块，34是其他)=%d--------\r\n", i, v.name, v.moduleType))
+		if streamIndex, ok := me.cfs.dic[v.name]; ok {
+			b := me.cfs.arrStream[streamIndex].stream.Bytes()[v.textOffset:]
+			b = unCompressStream(b)
+			b, _ = gbkToUtf8(b)
+			str = append(str, string(b))
+		}
+	}
+	return strings.Join(str, "\r\n")
+}
 func NewXlsFile(fileName string) *xlsFile {
 	xf := new(xlsFile)
 	xf.fileName = fileName

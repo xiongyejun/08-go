@@ -5,8 +5,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	"io/ioutil"
-	"syscall"
-	"unsafe"
+	"pkgMySelf/rleVBA"
+	//	"syscall"
+	//	"unsafe"
 
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
@@ -46,26 +47,31 @@ func byte2struct(b []byte, pStruct interface{}) {
 //}
 
 func unCompressStream(compressByre []byte) (unCompressByte []byte) {
-	ntdll := syscall.NewLazyDLL("NTDLL.dll")
-	tdb := ntdll.NewProc("RtlDecompressBuffer")
-
-	var k int32 = 1
-	iLen := int32(len(compressByre))
-	var outSize int32 = iLen + 1
-
-	for k*iLen <= outSize || outSize == 4096 {
-		k++
-		unCompressByte = make([]byte, k*iLen)
-		tdb.Call(2,
-			uintptr(unsafe.Pointer(&unCompressByte[0])),
-			uintptr(len(unCompressByte)),
-			uintptr(unsafe.Pointer(&compressByre[0])),
-			uintptr(len(unCompressByte)),
-			uintptr(unsafe.Pointer(&outSize)))
-	}
-
-	return unCompressByte[:outSize]
+	rle := rleVBA.NewRLE(compressByre[:])
+	return rle.UnCompress()
 }
+
+//func unCompressStream(compressByre []byte) (unCompressByte []byte) {
+//	ntdll := syscall.NewLazyDLL("NTDLL.dll")
+//	tdb := ntdll.NewProc("RtlDecompressBuffer")
+
+//	var k int32 = 1
+//	iLen := int32(len(compressByre))
+//	var outSize int32 = iLen + 1
+
+//	for k*iLen <= outSize || outSize == 4096 {
+//		k++
+//		unCompressByte = make([]byte, k*iLen)
+//		tdb.Call(2,
+//			uintptr(unsafe.Pointer(&unCompressByte[0])),
+//			uintptr(len(unCompressByte)),
+//			uintptr(unsafe.Pointer(&compressByre[0])),
+//			uintptr(len(unCompressByte)),
+//			uintptr(unsafe.Pointer(&outSize)))
+//	}
+
+//	return unCompressByte[:outSize]
+//}
 
 // RtlDecompressBuffer(CShort(2), p1, Result.Length, p2, Origin2.Length, ResultSize)
 
