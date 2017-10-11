@@ -91,7 +91,7 @@ func init() {
 		l.fGetFileName = getName
 	}
 
-	fmt.Printf("%#v\r\n", l)
+	//	fmt.Printf("%#v\r\n", l)
 }
 
 func (this *ls) scanDir(dirName string) {

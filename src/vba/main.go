@@ -4,17 +4,19 @@ package main
 import (
 	"flag"
 	"fmt"
-	"pkgAPI/comdlg32"
+	"os"
+	//	"pkgAPI/comdlg32"
 	"pkgMySelf/colorPrint"
 	"pkgMySelf/compdocFile"
 )
 
 type todo struct {
-	file       *string
-	moduleName *bool   // -m	打印模块名称
-	code       *bool   // -c	打印模块代码
-	project    *bool   // -p	破解工程密码
-	hideModule *string // -h	隐藏某个模块
+	file         string
+	moduleName   *bool   // -m	打印模块名称
+	code         *bool   // -c	打印模块代码
+	project      *bool   // -p	破解工程密码
+	hideModule   *string // -h	隐藏某个模块
+	unHideModule *string // -H	取消隐藏某个模块
 }
 
 var td *todo
@@ -22,42 +24,42 @@ var td *todo
 func init() {
 	td = new(todo)
 
-	td.file = flag.String("f", "", "文件名称")
 	td.moduleName = flag.Bool("m", false, "打印模块名称")
 	td.code = flag.Bool("c", false, "打印模块代码")
 	td.project = flag.Bool("p", false, "破解工程密码")
 	td.hideModule = flag.String("h", "", "隐藏某个模块")
+	td.unHideModule = flag.String("H", "", "取消隐藏某个模块")
 
 	flag.PrintDefaults()
 	flag.Parse()
+
+	fmt.Println("prompt: 文件名在最后输入。")
 }
 
 func main() {
-	cd := colorPrint.NewColorDll()
-
-	if !(*td.moduleName || *td.code || *td.project) && *td.hideModule == "" {
+	if len(os.Args) == 1 {
+		return
+	}
+	td.file = os.Args[len(os.Args)-1]
+	if _, err := os.Stat(td.file); err != nil {
+		fmt.Println(err)
 		return
 	}
 
-	if *td.file == "" {
-		fd := comdlg32.NewFileDialog()
-		b, _ := fd.GetOpenFileName()
-		if !b {
-			return
-		}
+	cd := colorPrint.NewColorDll()
 
-		*td.file = fd.FilePath
-		fmt.Println(*td.file)
+	if !(*td.moduleName || *td.code || *td.project) && *td.hideModule == "" && *td.unHideModule == "" {
+		return
 	}
 
 	var cf compdocFile.CF
-	if compdocFile.IsCompdocFile(*td.file) {
-		cf = compdocFile.NewXlsFile(*td.file)
-	} else if compdocFile.IsZip(*td.file) {
-		cf = compdocFile.NewZipFile(*td.file)
+	if compdocFile.IsCompdocFile(td.file) {
+		cf = compdocFile.NewXlsFile(td.file)
+	} else if compdocFile.IsZip(td.file) {
+		cf = compdocFile.NewZipFile(td.file)
 	} else {
 		cd.SetColor(colorPrint.White, colorPrint.DarkMagenta)
-		fmt.Println("未知文件：", *td.file)
+		fmt.Println("未知文件：", td.file)
 		cd.UnSetColor()
 		return
 	}
@@ -98,6 +100,16 @@ func main() {
 			fmt.Println(err)
 		} else {
 			fmt.Println("隐藏模块成功。")
+		}
+	}
+
+	if *td.unHideModule != "" {
+		err := cf.UnHideModule(*td.unHideModule)
+		cd.SetColor(colorPrint.White, colorPrint.DarkMagenta)
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Println("取消隐藏模块成功。")
 		}
 	}
 	cd.UnSetColor()

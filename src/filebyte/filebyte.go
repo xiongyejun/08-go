@@ -2,16 +2,17 @@
 package main
 
 import (
-	"bytes"
+	//	"bytes"
 	"flag"
 	"fmt"
 	"os"
 	"pkgMySelf/colorPrint"
 	"strings"
+	"unicode"
 )
 
 type filebyte struct {
-	file  *string
+	file  string
 	pause *bool
 
 	f func(b []byte, p_iPre *int)
@@ -21,11 +22,16 @@ var fb *filebyte
 var cd *colorPrint.ColorDll
 
 func main() {
-	if *fb.file == "" {
+	if len(os.Args) == 1 {
+		return
+	}
+	fb.file = os.Args[1]
+	if _, err := os.Stat(fb.file); err != nil {
+		fmt.Println(err)
 		return
 	}
 
-	f, err := os.Open(*fb.file)
+	f, err := os.Open(fb.file)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -64,15 +70,15 @@ func printOut(b []byte, p_iPre *int) {
 
 	for i := 0; i < len(b); i += 16 {
 		fmt.Printf("%08X % X ", *p_iPre, b[i:i+16])
-		bb := bytes.Replace(b[i:i+16], []byte{'\n'}, []byte{'^'}, -1)
-		bb = bytes.Replace(bb, []byte{'\r'}, []byte{'^'}, -1)
-		for _, v := range bb {
-			fmt.Printf("%c", v)
+		//		bb := bytes.Replace(b[i:i+16], []byte{'\n'}, []byte{'^'}, -1)
+		//		bb = bytes.Replace(bb, []byte{'\r'}, []byte{'^'}, -1)
+		for _, v := range b[i : i+16] {
+			if unicode.IsPrint(rune(v)) {
+				fmt.Printf("%c", v)
+			} else {
+				fmt.Print("^")
+			}
 		}
-		//		str := string(b[i : i+16])
-		//		str = strings.Replace(str, "\n", "^", -1)
-		//		str = strings.Replace(str, "\r", "^", -1)
-		//		fmt.Print(str)
 
 		fmt.Print("\r\n")
 		*p_iPre += 16
@@ -82,7 +88,6 @@ func printOut(b []byte, p_iPre *int) {
 func init() {
 	fb = new(filebyte)
 
-	fb.file = flag.String("f", "", "需要查看的文件名称")
 	fb.pause = flag.Bool("p", false, "打印完一段就pause")
 
 	flag.PrintDefaults()
