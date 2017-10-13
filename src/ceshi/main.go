@@ -2,10 +2,18 @@ package main
 
 import (
 	"fmt"
-	"math"
+
+	"github.com/xuri/excelize"
 )
 
 func main() {
-	var a float64 = 1024.0
-	fmt.Println(math.Log(a) / math.Log(2))
+	xlsx, err := excelize.OpenFile("./2.xlsx")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	// Get value from cell by given worksheet name and axis.
+	cell := xlsx.GetCellValue("月报表", "A1")
+	fmt.Println(cell, "111")
+
 }

@@ -16,14 +16,14 @@ type zipFile struct {
 }
 
 // 取消隐藏模块
-func (me *zipFile) UnHideModule(moduleName string) (err error) {
+func (me *zipFile) UnHideModule(moduleName string) (newFile string, err error) {
 	err = me.unHideModule(moduleName)
 	if err != nil {
 		return
 	}
 	return me.reWriteFile()
 }
-func (me *zipFile) UnProtectProject() (err error) {
+func (me *zipFile) UnProtectProject() (newFile string, err error) {
 	err = me.unProtectProject()
 	if err != nil {
 		return
@@ -32,7 +32,7 @@ func (me *zipFile) UnProtectProject() (err error) {
 }
 
 // 隐藏模块
-func (me *zipFile) HideModule(moduleName string) (err error) {
+func (me *zipFile) HideModule(moduleName string) (newFile string, err error) {
 	err = me.hideModule(moduleName)
 	if err != nil {
 		return
@@ -76,19 +76,19 @@ func (me *zipFile) readFileByte() (err error) {
 	return errors.New("err: 没有找到 vbaProject.bin")
 }
 
-func (me *zipFile) reWriteFile() (err error) {
+func (me *zipFile) reWriteFile() (newFile string, err error) {
 	zipReader, err := zip.OpenReader(me.fileName)
 	if err != nil {
-		return err
+		return newFile, err
 	}
 	defer zipReader.Close()
 
 	strExt := filepath.Ext(me.fileName)
-	strFileSave := me.fileName[:len(me.fileName)-len(strExt)] + "(new)" + strExt
+	newFile = me.fileName[:len(me.fileName)-len(strExt)] + "(new)" + strExt
 
-	fw, err := os.OpenFile(strFileSave, os.O_WRONLY|os.O_CREATE, 0666)
+	fw, err := os.OpenFile(newFile, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
-		return err
+		return newFile, err
 	}
 	defer fw.Close()
 
@@ -98,11 +98,11 @@ func (me *zipFile) reWriteFile() (err error) {
 	for _, f := range zipReader.File {
 		fr, err := f.Open()
 		if err != nil {
-			return err
+			return newFile, err
 		}
 		b, err := ioutil.ReadAll(fr)
 		if err != nil {
-			return err
+			return newFile, err
 		}
 		defer fr.Close()
 
@@ -112,13 +112,13 @@ func (me *zipFile) reWriteFile() (err error) {
 
 		wr, err := zipWriter.Create(f.Name)
 		if err != nil {
-			return err
+			return newFile, err
 		}
 		wr.Write(b)
 		zipWriter.Flush()
 	}
 
-	return nil
+	return newFile, err
 }
 
 func NewZipFile(fileName string) *zipFile {

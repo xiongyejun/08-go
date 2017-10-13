@@ -105,8 +105,8 @@ func (me *rle) deCompressingRawChunk() {
 	}
 
 	me.deCompressBuffer.Write(me.compressByte[me.compressed_Current:i_end])
-	me.compressed_Current += UnCompressChunkSize
-	me.deCompressed_Current += UnCompressChunkSize
+	me.compressed_Current += (i_end - me.compressed_Current)
+	me.deCompressed_Current += (i_end - me.compressed_Current)
 }
 
 // 解压缩TokenSequence

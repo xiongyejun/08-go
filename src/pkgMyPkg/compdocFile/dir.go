@@ -3,7 +3,7 @@ package compdocFile
 
 import (
 	"encoding/binary"
-	"pkgMySelf/ucs2T0utf8"
+	"pkgMyPkg/ucs2T0utf8"
 )
 
 type dirInfo struct {

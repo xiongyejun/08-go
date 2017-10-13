@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 	//	"pkgAPI/comdlg32"
-	"pkgMySelf/colorPrint"
-	"pkgMySelf/compdocFile"
+	"pkgMyPkg/colorPrint"
+	"pkgMyPkg/compdocFile"
 )
 
 type todo struct {
@@ -79,11 +79,11 @@ func main() {
 	}
 
 	if *td.code {
-		cf.PrintAllCode()
+		fmt.Println(cf.GetAllCode())
 	}
 
 	if *td.project {
-		err := cf.UnProtectProject()
+		_, err := cf.UnProtectProject()
 		cd.SetColor(colorPrint.White, colorPrint.DarkMagenta)
 		if err != nil {
 			fmt.Println(err)
@@ -94,7 +94,7 @@ func main() {
 
 	if *td.hideModule != "" {
 		fmt.Println("hide")
-		err := cf.HideModule(*td.hideModule)
+		_, err := cf.HideModule(*td.hideModule)
 		cd.SetColor(colorPrint.White, colorPrint.DarkMagenta)
 		if err != nil {
 			fmt.Println(err)
@@ -104,7 +104,7 @@ func main() {
 	}
 
 	if *td.unHideModule != "" {
-		err := cf.UnHideModule(*td.unHideModule)
+		_, err := cf.UnHideModule(*td.unHideModule)
 		cd.SetColor(colorPrint.White, colorPrint.DarkMagenta)
 		if err != nil {
 			fmt.Println(err)

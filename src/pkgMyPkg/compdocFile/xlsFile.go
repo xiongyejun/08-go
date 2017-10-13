@@ -8,7 +8,6 @@ import (
 	"io"
 	"io/ioutil"
 	"path/filepath"
-	"pkgMySelf/colorPrint"
 	"regexp"
 	"strings"
 )
@@ -50,7 +49,7 @@ func (me *xlsFile) readFileByte() (err error) {
 	return
 }
 
-func (me *xlsFile) UnProtectProject() (err error) {
+func (me *xlsFile) UnProtectProject() (newFile string, err error) {
 	err = me.unProtectProject()
 	if err != nil {
 		return
@@ -89,7 +88,7 @@ func (me *xlsFile) unProtectProject() (err error) {
 }
 
 // 取消隐藏模块
-func (me *xlsFile) UnHideModule(moduleName string) (err error) {
+func (me *xlsFile) UnHideModule(moduleName string) (newFile string, err error) {
 	err = me.unHideModule(moduleName)
 	if err != nil {
 		return
@@ -111,7 +110,6 @@ func (me *xlsFile) unHideModule(moduleName string) (err error) {
 		copy(bNew[len(bModule):], bOld)
 
 		b1 := bytes.Replace(b, bOld, bNew, 1)
-		fmt.Println("b=", len(b), "b1=", len(b1))
 		err = me.modifyProject(b, b1, streamIndex)
 		return err
 	} else {
@@ -121,7 +119,7 @@ func (me *xlsFile) unHideModule(moduleName string) (err error) {
 }
 
 // 隐藏模块
-func (me *xlsFile) HideModule(moduleName string) (err error) {
+func (me *xlsFile) HideModule(moduleName string) (newFile string, err error) {
 	err = me.hideModule(moduleName)
 	if err != nil {
 		return
@@ -193,11 +191,11 @@ func (me *xlsFile) modifyProject(oldB, newB []byte, streamIndex int32) (err erro
 }
 
 // 在清除工程密码、隐藏模块后等操作后，将filebyte重新保存文件
-func (me *xlsFile) reWriteFile() (err error) {
+func (me *xlsFile) reWriteFile() (newFile string, err error) {
 	strExt := filepath.Ext(me.fileName)
-	strFileSave := me.fileName[:len(me.fileName)-len(strExt)] + "(new)" + strExt
+	newFile = me.fileName[:len(me.fileName)-len(strExt)] + "(new)" + strExt
 
-	return ioutil.WriteFile(strFileSave, me.cfs.fileByte, 0666)
+	return newFile, ioutil.WriteFile(newFile, me.cfs.fileByte, 0666)
 	//	fs, err := os.OpenFile(strFileSave, os.O_CREATE|os.O_WRONLY, 0666)
 	//	if err != nil {
 	//		return
@@ -206,52 +204,35 @@ func (me *xlsFile) reWriteFile() (err error) {
 	//	return
 }
 
-func (me *xlsFile) GetModuleName() (modules []string) {
-	modules = make([]string, len(me.cfs.arrDirInfo))
+func (me *xlsFile) GetModuleName() (modules [][2]string) {
+	modules = make([][2]string, len(me.cfs.arrDirInfo))
 	var strType string
+
 	for i := 0; i < len(me.cfs.arrDirInfo); i++ {
 		if me.cfs.arrDirInfo[i].moduleType == 0x21 {
 			strType = "标准模块"
 		} else {
 			strType = "类模块"
 		}
-		modules[i] = me.cfs.arrDirInfo[i].name + "\t" + strType
+		modules[i][0] = me.cfs.arrDirInfo[i].name
+		modules[i][1] = strType
 	}
 	return
 }
 
-func (xf *xlsFile) GetModuleString(strModuleName string) string {
-	if streamIndex, ok := xf.cfs.dic[strModuleName]; ok {
-		if dirInfoIndex, ok2 := xf.cfs.dicModule[strModuleName]; ok2 {
-			b := xf.cfs.arrStream[streamIndex].stream.Bytes()[xf.cfs.arrDirInfo[dirInfoIndex].textOffset:]
+func (me *xlsFile) GetModuleCode(strModuleName string) string {
+	if streamIndex, ok := me.cfs.dic[strModuleName]; ok {
+		if dirInfoIndex, ok2 := me.cfs.dicModule[strModuleName]; ok2 {
+			// 看modifyProject里的说明，streamSize为什么没有调整
+			b := me.cfs.arrStream[streamIndex].stream.Bytes()[me.cfs.arrDirInfo[dirInfoIndex].textOffset:me.cfs.arrDir[streamIndex].Stream_size]
 			b = unCompressStream(b)
-			b, _ = gbkToUtf8(b)
-			return string(b)
+			return gbkToUtf8(b)
 		} else {
 			return "不存在的模块名称。"
 		}
 
 	}
 	return "不存在的目录名称。"
-}
-
-func (me *xlsFile) PrintAllCode() {
-	cd := colorPrint.NewColorDll()
-	for i, v := range me.cfs.arrDirInfo {
-		cd.SetColor(colorPrint.White, colorPrint.DarkMagenta)
-		fmt.Print("\r\n")
-		fmt.Printf("%2d--------%s.moduleType(33是标准模块，34是其他)=%d--------", i, v.name, v.moduleType)
-		cd.SetColor(colorPrint.White, colorPrint.DarkGreen)
-		fmt.Print("\r\n")
-		if streamIndex, ok := me.cfs.dic[v.name]; ok {
-			b := me.cfs.arrStream[streamIndex].stream.Bytes()[v.textOffset:]
-			b = unCompressStream(b)
-			b, _ = gbkToUtf8(b)
-			fmt.Print(string(b))
-			cd.UnSetColor()
-			fmt.Print("\r\n")
-		}
-	}
 }
 
 func (me *xlsFile) GetAllCode() string {
@@ -261,10 +242,10 @@ func (me *xlsFile) GetAllCode() string {
 
 		str = append(str, fmt.Sprintf("%2d--------%s.moduleType(33是标准模块，34是其他)=%d--------\r\n", i, v.name, v.moduleType))
 		if streamIndex, ok := me.cfs.dic[v.name]; ok {
-			b := me.cfs.arrStream[streamIndex].stream.Bytes()[v.textOffset:]
+			// 看modifyProject里的说明，streamSize为什么没有调整
+			b := me.cfs.arrStream[streamIndex].stream.Bytes()[v.textOffset:me.cfs.arrDir[streamIndex].Stream_size]
 			b = unCompressStream(b)
-			b, _ = gbkToUtf8(b)
-			str = append(str, string(b))
+			str = append(str, gbkToUtf8(b))
 		}
 	}
 	return strings.Join(str, "\r\n")

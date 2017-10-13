@@ -6,7 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"pkgMySelf/colorPrint"
+	"pkgMyPkg/colorPrint"
 	"strings"
 	"unicode"
 )
@@ -21,12 +21,16 @@ type filebyte struct {
 var fb *filebyte
 var cd *colorPrint.ColorDll
 
+const N_READ = 512 // 每次读取的byte个数
+
 func main() {
 	if len(os.Args) == 1 {
 		return
 	}
-	fb.file = os.Args[1]
-	if _, err := os.Stat(fb.file); err != nil {
+	// 文件是否存在
+	fb.file = os.Args[len(os.Args)-1] // 先输参数，最后数文件名
+	_, err := os.Stat(fb.file)
+	if err != nil {
 		fmt.Println(err)
 		return
 	}
@@ -38,51 +42,66 @@ func main() {
 	}
 	defer f.Close()
 
-	N := 512
-	iPre := 0
-	var n int = N
+	iNo := 0 // 输出的序号
+	var n int = N_READ
 
-	for n == N {
+	for n == N_READ {
 		fmt.Print("\r\n")
-		b := make([]byte, N)
+		b := make([]byte, N_READ)
 		n, _ = f.Read(b)
-		fb.f(b[:n], &iPre)
+		fb.f(b[:n], &iNo)
 	}
 
 	cd.UnSetColor()
 }
 
-func printOutPause(b []byte, p_iPre *int) {
-	printOut(b[:], p_iPre)
+func printOutPause(b []byte, p_iNo *int) {
+	printOut(b[:], p_iNo)
 
-	fmt.Print("pause ")
 	var c string
+	cd.SetColor(colorPrint.White, colorPrint.Red)
+	fmt.Print("pause ")
 	fmt.Scan(&c)
+	cd.UnSetColor()
+	fmt.Print("\r\n")
 }
 
-func printOut(b []byte, p_iPre *int) {
+func printOut(b []byte, p_iNo *int) {
 	cd.SetColor(colorPrint.White, colorPrint.DarkMagenta)
-	fmt.Printf("   index % X\r\n", []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
-	fmt.Print(strings.Repeat("-", 8+16*3))
+	fmt.Printf("   index % X ------ASCII-----\r\n", []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+	fmt.Print(strings.Repeat("-", 8+16*3+16+1))
 
 	cd.SetColor(colorPrint.White, colorPrint.DarkCyan)
 	fmt.Print("\r\n")
 
-	for i := 0; i < len(b); i += 16 {
-		fmt.Printf("%08X % X ", *p_iPre, b[i:i+16])
-		//		bb := bytes.Replace(b[i:i+16], []byte{'\n'}, []byte{'^'}, -1)
-		//		bb = bytes.Replace(bb, []byte{'\r'}, []byte{'^'}, -1)
+	var str []string = make([]string, 0, N_READ/16)
+	n := len(b)
+	for i := 0; i < n; i += 16 {
+		str_tmp := fmt.Sprintf("%08X % X ", *p_iNo, b[i:i+16])
 		for _, v := range b[i : i+16] {
 			if unicode.IsPrint(rune(v)) {
-				fmt.Printf("%c", v)
+				str_tmp += fmt.Sprintf("%c", v)
 			} else {
-				fmt.Print("^")
+				str_tmp += "^"
 			}
 		}
-
-		fmt.Print("\r\n")
-		*p_iPre += 16
+		*p_iNo += 16
+		str = append(str, str_tmp)
 	}
+	//	nstr := len(str)
+	strPrint := strings.Join(str, "\r\n")
+	// 将最后一些多余的清空
+	if n < N_READ {
+		n = n % 16
+		if n > 0 {
+			n = 16 - n
+			nbyte := 3 * n // 空byte所占的个数
+			strPrint = strPrint[:len(strPrint)-16-nbyte] +
+				strings.Repeat(" ", nbyte) +
+				strPrint[len(strPrint)-16:(len(strPrint)-16+(16-n))] // 最后一行的字符
+		}
+	}
+	fmt.Print(strPrint)
 }
 
 func init() {

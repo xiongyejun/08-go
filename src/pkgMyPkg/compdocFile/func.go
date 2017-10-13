@@ -4,13 +4,7 @@ package compdocFile
 import (
 	"bytes"
 	"encoding/binary"
-	"io/ioutil"
-	"pkgMySelf/rleVBA"
-	//	"syscall"
-	//	"unsafe"
-
-	"golang.org/x/text/encoding/simplifiedchinese"
-	"golang.org/x/text/transform"
+	"pkgMyPkg/rleVBA"
 
 	"github.com/axgle/mahonia"
 )
@@ -80,15 +74,20 @@ func unCompressStream(compressByre []byte) (unCompressByte []byte) {
 //                    ByVal BuffCompressed As IntPtr, ByVal CompBuffSize As Integer,
 //                    ByRef OutputSize As Integer) As Integer
 
-func gbkToUtf8(b []byte) ([]byte, error) {
-	reader := transform.NewReader(bytes.NewReader(b), simplifiedchinese.GBK.NewDecoder())
-	d, e := ioutil.ReadAll(reader)
-	if e != nil {
-		return nil, e
-	}
-	return d, nil
+//func gbkToUtf8(b []byte) ([]byte, error) {
+//	reader := transform.NewReader(bytes.NewReader(b), simplifiedchinese.GBK.NewDecoder())
+//	d, e := ioutil.ReadAll(reader)
+//	if e != nil {
+//		return nil, e
+//	}
+//	return d, nil
 
-	//			simplifiedchinese.HZGB2312.NewDecoder()
+//	//			simplifiedchinese.HZGB2312.NewDecoder()
+//}
+
+func gbkToUtf8(b []byte) string {
+	decoder := mahonia.NewDecoder("gbk")
+	return string(decoder.ConvertByteToString(b))
 }
 
 func utf8ToGbk(src string) string {

@@ -3,28 +3,27 @@ package compdocFile
 
 import (
 	"bytes"
-	"fmt"
+	"errors"
 	"os"
-	"pkgMySelf/ucs2T0utf8"
+	"pkgMyPkg/ucs2T0utf8"
 )
 
 // 复合文档接口
 type CF interface {
 	readFileByte() error
-	reWriteFile() error
+	reWriteFile() (string, error)
 
 	GetFileName() string
 	GetFileByte() *[]byte
 	GetFileSize() uint64
 
 	GetCFStruct() *cfStruct
-	GetModuleString(strModuleName string) string
-	GetModuleName() []string
-	PrintAllCode()
+	GetModuleCode(strModuleName string) string
+	GetModuleName() [][2]string
 	GetAllCode() string
-	UnProtectProject() (err error)
-	HideModule(moduleName string) (err error)
-	UnHideModule(moduleName string) (err error)
+	UnProtectProject() (newFile string, err error)
+	HideModule(moduleName string) (newFile string, err error)
+	UnHideModule(moduleName string) (newFile string, err error)
 }
 
 const (
@@ -98,7 +97,11 @@ func CFInit(c CF) (err error) {
 }
 
 func getDirInfo(cfs *cfStruct) (err error) {
-	dirIndex := cfs.dic["dir"]
+	var dirIndex int32
+	var ok bool
+	if dirIndex, ok = cfs.dic["dir"]; !ok {
+		return errors.New("没有vba。")
+	}
 	b := cfs.arrStream[dirIndex].stream.Bytes()[:cfs.arrDir[dirIndex].Stream_size]
 	b = unCompressStream(b[:]) // 注意：如果使用API解压的时候要跳过第1个标志位
 
@@ -108,36 +111,6 @@ func getDirInfo(cfs *cfStruct) (err error) {
 		cfs.dicModule[cfs.arrDirInfo[i].name] = int32(i)
 	}
 	return nil
-}
-
-func printTest(cfs *cfStruct) {
-	for i := 0; i < len(cfs.arrDir); i++ {
-		b := cfs.arrDir[i].Dir_name[:cfs.arrDir[i].Len_name-2]
-		b, err := ucs2T0utf8.UCS2toUTF8(b)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		name := string(b)
-		//		fmt.Println(name)
-
-		//				if name == "PROJECT" {
-		//					b, _ := gbkToUtf8(cfs.arrStream[i].stream.Bytes())
-		//					fmt.Println(string(b))
-		//				}
-
-		if name == "dir" {
-			b := cfs.arrStream[i].stream.Bytes()[:cfs.arrDir[i].Stream_size]
-			fmt.Println("dirstream=", len(b))
-			b = unCompressStream(b[1:]) // 解压的时候要跳过第1个标志位
-
-			arrDirInfo := getModuleInfo(b)
-			fmt.Println(len(arrDirInfo))
-			for j := 0; j < len(arrDirInfo); j++ {
-				fmt.Println(arrDirInfo[j].name)
-			}
-		}
-	}
 }
 
 // 获取主分区表
