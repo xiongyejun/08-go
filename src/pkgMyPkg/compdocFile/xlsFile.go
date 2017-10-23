@@ -98,20 +98,29 @@ func (me *xlsFile) UnHideModule(moduleName string) (newFile string, err error) {
 func (me *xlsFile) unHideModule(moduleName string) (err error) {
 	// HelpFile="" 在这个前面添加 Module=moduleNameODOA
 	if streamIndex, ok := me.cfs.dic["PROJECT"]; ok {
-		// 读取PROJECT的byte
-		b := me.cfs.arrStream[streamIndex].stream.Bytes()
-		bModule := []byte(utf8ToGbk(`Module=` + moduleName))
-		bModule = append(bModule, '\r')
-		bModule = append(bModule, '\n')
+		if _, ok := me.cfs.dicModule[moduleName]; ok {
+			// 读取PROJECT的byte
+			b := me.cfs.arrStream[streamIndex].stream.Bytes()
+			bModule := []byte(utf8ToGbk(`Module=` + moduleName))
+			bModule = append(bModule, '\r')
+			bModule = append(bModule, '\n')
+			// 判断是否是被隐藏了
+			if bytes.Contains(b, bModule) {
+				return errors.New("模块并没有被隐藏。")
+			}
 
-		bOld := []byte(`HelpFile=""`)
-		bNew := make([]byte, len(bModule)+len(bOld))
-		copy(bNew[0:], bModule)
-		copy(bNew[len(bModule):], bOld)
+			bOld := []byte(`HelpFile=""`)
+			bNew := make([]byte, len(bModule)+len(bOld))
+			copy(bNew[0:], bModule)
+			copy(bNew[len(bModule):], bOld)
 
-		b1 := bytes.Replace(b, bOld, bNew, 1)
-		err = me.modifyProject(b, b1, streamIndex)
-		return err
+			b1 := bytes.Replace(b, bOld, bNew, 1)
+			err = me.modifyProject(b, b1, streamIndex)
+			return err
+		} else {
+			return errors.New("不存在的模块名称。")
+		}
+
 	} else {
 		return errors.New("未找到PROJECT。")
 	}
@@ -145,7 +154,14 @@ func (me *xlsFile) hideModule(moduleName string) (err error) {
 			bReplace := []byte(pattern)
 			bReplace = append(bReplace, '\r')
 			bReplace = append(bReplace, '\n')
+
 			b1 = bytes.Replace(b, bReplace, []byte{}, -1)
+			// project流中没有模块的信息
+			if len(b) == len(b1) {
+				err = errors.New(err.Error() + "已经是被隐藏的模块。")
+				return
+			}
+
 			err = me.modifyProject(b, b1, streamIndex)
 
 			if err != nil {
@@ -190,6 +206,11 @@ func (me *xlsFile) modifyProject(oldB, newB []byte, streamIndex int32) (err erro
 	return err
 }
 
+func (me *xlsFile) ReWriteFile(startAddress int, modifyByte []byte) (newFile string, err error) {
+	copy(me.cfs.fileByte[startAddress:], modifyByte)
+	return me.reWriteFile()
+}
+
 // 在清除工程密码、隐藏模块后等操作后，将filebyte重新保存文件
 func (me *xlsFile) reWriteFile() (newFile string, err error) {
 	strExt := filepath.Ext(me.fileName)
@@ -202,6 +223,31 @@ func (me *xlsFile) reWriteFile() (newFile string, err error) {
 	//	}
 	//	fs.Write(me.cfs.fileByte)
 	//	return
+}
+
+func (me *xlsFile) GetVBAInfo() (out []*OutStruct) {
+	out = make([]*OutStruct, len(me.cfs.arrStream))
+
+	for i := 0; i < len(me.cfs.arrStream); i++ {
+		out[i] = NewOutStruct()
+		out[i].Name = me.cfs.arrStream[i].name // stream已经记录了name
+		if me.cfs.arrDir[i].CfType == 1 {      // 1仓 2流 5根
+			out[i].Type = "仓"
+		} else if me.cfs.arrDir[i].CfType == 5 { // 1仓 2流 5根
+			out[i].Type = "根"
+		} else if me.cfs.arrDir[i].CfType == 2 { // 1仓 2流 5根
+			if dirInfoIndex, ok := me.cfs.dicModule[out[i].Name]; ok {
+				if me.cfs.arrDirInfo[dirInfoIndex].moduleType == 0x22 {
+					out[i].Type = "类模块流"
+				} else {
+					out[i].Type = "模块流"
+				}
+			} else {
+				out[i].Type = "流"
+			}
+		}
+	}
+	return
 }
 
 func (me *xlsFile) GetModuleName() (modules [][2]string) {
@@ -218,6 +264,22 @@ func (me *xlsFile) GetModuleName() (modules [][2]string) {
 		modules[i][1] = strType
 	}
 	return
+}
+
+// 返回数据的steam和数据的地址
+func (me *xlsFile) GetStream(name string) (bStream []byte, bAddress []int32, step int32) {
+	if streamIndex, ok := me.cfs.dic[name]; ok {
+		if me.cfs.arrStream[streamIndex].stream == nil {
+			return []byte{}, []int32{}, 0
+		} else {
+			bStream = me.cfs.arrStream[streamIndex].stream.Bytes()[:me.cfs.arrDir[streamIndex].Stream_size]
+			bAddress = me.cfs.arrStream[streamIndex].address
+			step = me.cfs.arrStream[streamIndex].step
+			return
+		}
+	}
+
+	return []byte("不存在的流。"), []int32{}, 0
 }
 
 func (me *xlsFile) GetModuleCode(strModuleName string) string {

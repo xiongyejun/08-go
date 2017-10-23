@@ -1,19 +1,40 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
-
-	"github.com/xuri/excelize"
+	_ "odbc/driver"
 )
 
 func main() {
-	xlsx, err := excelize.OpenFile("./2.xlsx")
+	conn, err := sql.Open("odbc", "driver={Microsoft Access Driver (*.mdb)};dbq=d:\\test.mdb")
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Connecting Error")
 		return
 	}
-	// Get value from cell by given worksheet name and axis.
-	cell := xlsx.GetCellValue("月报表", "A1")
-	fmt.Println(cell, "111")
-
+	fmt.Printf("%#v\r\n", conn)
+	defer conn.Close()
+	stmt, err := conn.Prepare("select * from [test]") //ALTER TABLE tb ALTER COLUMN aa Long
+	if err != nil {
+		fmt.Println("Query Error", err)
+		return
+	}
+	defer stmt.Close()
+	row, err := stmt.Query()
+	if err != nil {
+		fmt.Print(err)
+		fmt.Println("Query Error")
+		return
+	}
+	defer row.Close()
+	for row.Next() {
+		var ID string
+		var SequenceNumber int
+		var ValueCode string
+		if err := row.Scan(&ID, &SequenceNumber, &ValueCode); err == nil {
+			fmt.Println(ID, SequenceNumber, ValueCode)
+		}
+	}
+	fmt.Printf("%s\n", "finish")
+	return
 }

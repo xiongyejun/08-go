@@ -24,6 +24,9 @@ type CF interface {
 	UnProtectProject() (newFile string, err error)
 	HideModule(moduleName string) (newFile string, err error)
 	UnHideModule(moduleName string) (newFile string, err error)
+	GetVBAInfo() (out []*OutStruct)
+	GetStream(name string) (bStream []byte, bAddress []int32, step int32)
+	ReWriteFile(startAddress int, modifyByte []byte) (newFile string, err error)
 }
 
 const (
@@ -183,7 +186,13 @@ func getDir(cfs *cfStruct) (err error) {
 			pSID = cfs.arrSAT[pSID]
 		}
 	}
-
+	// 因为是4个一次性读取，所有最后可能有0-3个空白
+	var k int = len(cfs.arrDir) - 1
+	for cfs.arrDir[k].Len_name == 0 {
+		k--
+	}
+	k++
+	cfs.arrDir = cfs.arrDir[:k]
 	return nil
 }
 
@@ -219,9 +228,10 @@ func getStream(cfs *cfStruct) (err error) {
 	cfs.dic = make(map[string]int32, 10)
 
 	for ; i < n; i++ {
-		if 0 == cfs.arrDir[i].Len_name { // dir读取的时候可能出现空的dir
-			continue
-		}
+		cfs.arrStream[i] = new(cfStream)
+		//		if 0 == cfs.arrDir[i].Len_name { // dir读取的时候可能出现空的dir  在getDIR里处理掉
+		//			continue
+		//		}
 		// 读取name的byte
 		b := cfs.arrDir[i].Dir_name[:cfs.arrDir[i].Len_name-2]
 		b, err := ucs2T0utf8.UCS2toUTF8(b)
@@ -229,6 +239,7 @@ func getStream(cfs *cfStruct) (err error) {
 			return err
 		}
 		name := string(b)
+		cfs.arrStream[i].name = name
 
 		// 窗体的时候，会出现2个在dir中，但是type1个是2,1个是1
 		if _, ok := cfs.dic[name]; ok {
@@ -236,8 +247,6 @@ func getStream(cfs *cfStruct) (err error) {
 			continue
 		}
 		cfs.dic[name] = i //记录每个dir name 所在的下标
-		cfs.arrStream[i] = new(cfStream)
-		cfs.arrStream[i].name = name
 
 		if cfs.arrDir[i].CfType == 2 && cfs.arrDir[i].First_SID != -1 {
 			// 1仓 2流 5根

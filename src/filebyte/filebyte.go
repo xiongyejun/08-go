@@ -58,9 +58,12 @@ func main() {
 func printOutPause(b []byte, p_iNo *int) {
 	printOut(b[:], p_iNo)
 
+	if len(b) < N_READ {
+		return
+	}
 	var c string
 	cd.SetColor(colorPrint.White, colorPrint.Red)
-	fmt.Print("pause ")
+	fmt.Print("\r\npause ")
 	fmt.Scan(&c)
 	cd.UnSetColor()
 	fmt.Print("\r\n")
@@ -68,8 +71,8 @@ func printOutPause(b []byte, p_iNo *int) {
 
 func printOut(b []byte, p_iNo *int) {
 	cd.SetColor(colorPrint.White, colorPrint.DarkMagenta)
-	fmt.Printf("   index % X ------ASCII-----\r\n", []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
-	fmt.Print(strings.Repeat("-", 8+16*3+16+1))
+	fmt.Printf("   index % X ------ASCII-----", []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+	//	fmt.Print(strings.Repeat("-", 8+16*3+16+1))
 
 	cd.SetColor(colorPrint.White, colorPrint.DarkCyan)
 	fmt.Print("\r\n")

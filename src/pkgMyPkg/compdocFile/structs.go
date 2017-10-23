@@ -53,7 +53,7 @@ type cfStruct struct {
 	arrStream  []*cfStream // 目录对应的流
 	arrSSAT    []int32     // 短分区表
 
-	arrDirInfo []dirInfo
+	arrDirInfo []dirInfo        // 从dir解压获取的模块的信息
 	dic        map[string]int32 // 记录流在arrStream里的位置
 	dicModule  map[string]int32 // 记录模块在arrDirInfo里的位置
 }
@@ -63,4 +63,13 @@ type cfStream struct {
 	step    int32         // 短流是64，正常的是512，如果是0就不是流
 	address []int32       // 记录每个地址的开始	，也就是记录arrSAT或者arrSSAT
 	name    string
+}
+
+type OutStruct struct {
+	Name string
+	Type string // 1仓 2流（流再具体下是否是模块流） 5根
+}
+
+func NewOutStruct() *OutStruct {
+	return new(OutStruct)
 }

@@ -84,6 +84,8 @@ func (w *Wechat) getWechatRoomMember(roomID, userId string) (roomName, userName 
 }
 
 func (w *Wechat) getSyncMsg() (msgs []interface{}, err error) {
+	fmt.Println("getSyncMsg")
+
 	name := "webwxsync"
 	syncResp := new(SyncResp)
 	url := fmt.Sprintf("%s/%s?sid=%s&pass_ticket=%s&skey=%s", w.BaseUri, name, w.Request.Wxsid, w.Request.PassTicket, w.Request.Skey)
@@ -114,25 +116,31 @@ func (w *Wechat) getSyncMsg() (msgs []interface{}, err error) {
 	}
 
 	msgs = syncResp.AddMsgList
+
+	fmt.Println(msgs)
 	return
 }
 
 //同步守护goroutine
 func (w *Wechat) SyncDaemon(msgIn chan Message) {
 	for {
+		fmt.Println("SyncDaemon")
+
 		w.lastCheckTs = time.Now()
 		resp, err := w.SyncCheck()
 		if err != nil {
-			w.Log.Printf("w.SyncCheck() with error:%+v\n", err)
+			fmt.Println("w.SyncCheck() with error:", err)
 			continue
 		}
+		fmt.Printf("%#v\r\n", resp)
+
 		switch resp.RetCode {
-		case 1100:
-			w.Log.Println("从微信上登出")
+		//		case 1100:
+		//			w.Log.Println("从微信上登出")
 		case 1101:
 			w.Log.Println("从其他设备上登陆")
 			break
-		case 0:
+		case 0, 1100:
 			switch resp.Selector {
 			case 2, 3: //有消息,未知
 				msgs, err := w.getSyncMsg()
@@ -161,8 +169,6 @@ func (w *Wechat) SyncDaemon(msgIn chan Message) {
 					msg.Content = strings.Replace(msg.Content, "&gt;", ">", -1)
 					msg.Content = strings.Replace(msg.Content, " ", " ", 1)
 
-					fmt.Println(msg.Content)
-
 					switch msg.MsgType {
 					case 1:
 
@@ -178,18 +184,22 @@ func (w *Wechat) SyncDaemon(msgIn chan Message) {
 								w.SendMsg(msg.FromUserName, w.AutoReplyMsg(), false)
 							}
 						}
+
 						if msg.ToUserNickName == "" {
 							if user, ok := w.MemberMap[msg.ToUserName]; ok {
 								msg.ToUserNickName = user.NickName
 							}
 
 						}
+
 						if msg.FromUserNickName == "" {
 							if user, ok := w.MemberMap[msg.FromUserNickName]; ok {
 								msg.FromUserNickName = user.NickName
 							}
 						}
 						msgIn <- msg
+						fmt.Println(1, msg.Content)
+
 					case 3:
 						//图片
 					case 34:

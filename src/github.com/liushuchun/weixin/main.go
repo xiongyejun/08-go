@@ -3,13 +3,15 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
+	"time"
 
 	ct "github.com/daviddengcn/go-colortext"
-	"github.com/liushuchun/wechatcmd/ui"
+	//	"github.com/liushuchun/wechatcmd/ui"
 	chat "github.com/liushuchun/wechatcmd/wechat"
 )
 
@@ -96,8 +98,8 @@ func main() {
 		return
 	}
 
-	nickNameList := []string{}
-	userIDList := []string{}
+	nickNameList := []string{} // 昵称
+	userIDList := []string{}   // id 群的开头是2个@@，用户是1个@
 
 	for _, member := range wechat.InitContactList {
 		nickNameList = append(nickNameList, member.NickName)
@@ -116,16 +118,40 @@ func main() {
 
 	}
 
+	//	ioutil.WriteFile("nickNameList.txt", []byte(strings.Join(nickNameList, "\r\n")), 0666)
+	//	ioutil.WriteFile("userIDList.txt", []byte(strings.Join(userIDList, "\r\n")), 0666)
+
 	msgIn := make(chan chat.Message, maxChanSize)
 	msgOut := make(chan chat.MessageOut, maxChanSize)
 	closeChan := make(chan int, 1)
 	autoChan := make(chan int, 1)
-	layout := ui.NewLayout(nickNameList, userIDList, wechat.User.NickName, wechat.User.UserName, msgIn, msgOut, closeChan, autoChan, wxLogger)
+	//	layout := ui.NewLayout(nickNameList, userIDList, wechat.User.NickName, wechat.User.UserName, msgIn, msgOut, closeChan, autoChan, wxLogger)
 
 	go wechat.SyncDaemon(msgIn)
 
 	go wechat.MsgDaemon(msgOut, autoChan)
 
-	layout.Init()
+	go displayMsgIn(msgIn, closeChan)
 
+	for {
+		time.Sleep(33333)
+	}
+	//	layout.Init()
+
+}
+
+func displayMsgIn(msgIn chan chat.Message, closeChan chan int) {
+	var msg chat.Message
+
+	for {
+		fmt.Println(len(msgIn))
+		select {
+		case msg = <-msgIn:
+			text := msg.String()
+			fmt.Println(text)
+		case <-closeChan:
+			break
+		}
+	}
+	return
 }

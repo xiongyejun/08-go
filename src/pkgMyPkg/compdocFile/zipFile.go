@@ -40,6 +40,11 @@ func (me *zipFile) HideModule(moduleName string) (newFile string, err error) {
 	return me.reWriteFile()
 }
 
+func (me *zipFile) ReWriteFile(startAddress int, modifyByte []byte) (newFile string, err error) {
+	copy(me.cfs.fileByte[startAddress:], modifyByte)
+	return me.reWriteFile()
+}
+
 func (me *zipFile) readFileByte() (err error) {
 	reader, err := zip.OpenReader(me.fileName)
 	if err != nil {
@@ -59,11 +64,14 @@ func (me *zipFile) readFileByte() (err error) {
 			me.fileSize = f.UncompressedSize64
 			me.cfs.fileByte = make([]byte, me.fileSize)
 
-			var pFileByte uint64 = 0
-			for pFileByte < me.fileSize {
-				n, _ := rc.Read(me.cfs.fileByte[pFileByte:]) // 一次只能读取32768个byte，不知道为什么
-				pFileByte += uint64(n)
-				//				fmt.Println("pFileByte=", pFileByte, "f.UncompressedSize64=", f.UncompressedSize64)
+			//			var pFileByte uint64 = 0
+			//			for pFileByte < me.fileSize {
+			//				n, _ := rc.Read(me.cfs.fileByte[pFileByte:]) // 一次只能读取32768个byte，不知道为什么
+			//				pFileByte += uint64(n)
+			//				//				fmt.Println("pFileByte=", pFileByte, "f.UncompressedSize64=", f.UncompressedSize64)
+			//			}
+			if me.cfs.fileByte, err = ioutil.ReadAll(rc); err != nil {
+				return err
 			}
 
 			iSizeHeader := binary.Size(me.cfs.header)
@@ -77,46 +85,57 @@ func (me *zipFile) readFileByte() (err error) {
 }
 
 func (me *zipFile) reWriteFile() (newFile string, err error) {
+	// 读取zip文件
 	zipReader, err := zip.OpenReader(me.fileName)
 	if err != nil {
 		return newFile, err
 	}
 	defer zipReader.Close()
-
+	// 设置新文件名
 	strExt := filepath.Ext(me.fileName)
 	newFile = me.fileName[:len(me.fileName)-len(strExt)] + "(new)" + strExt
-
+	// 创建新文件
 	fw, err := os.OpenFile(newFile, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		return newFile, err
 	}
 	defer fw.Close()
-
+	// 创建zip writer
 	zipWriter := zip.NewWriter(fw)
 	defer zipWriter.Close()
-
+	// 循环zip文件中的文件
 	for _, f := range zipReader.File {
+		// 打开子文件
 		fr, err := f.Open()
 		if err != nil {
 			return newFile, err
 		}
+		// 读取子文件流
 		b, err := ioutil.ReadAll(fr)
 		if err != nil {
 			return newFile, err
 		}
 		defer fr.Close()
-
+		// 如果是vba，就用改写了的流
 		if f.Name == "xl/vbaProject.bin" {
 			b = me.cfs.fileByte
 		}
-
+		// 在zipwriter中创建新文件
 		wr, err := zipWriter.Create(f.Name)
 		if err != nil {
 			return newFile, err
 		}
-		wr.Write(b)
-		zipWriter.Flush()
+		// 写入新文件的数据
+		n := 0
+		n, err = wr.Write(b)
+		if err != nil {
+			return newFile, err
+		}
+		if n < len(b) {
+			return newFile, errors.New("写入不完整")
+		}
 	}
+	err = zipWriter.Flush()
 
 	return newFile, err
 }

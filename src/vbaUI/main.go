@@ -2,41 +2,34 @@
 package main
 
 import (
-	//	"fmt"
-	//	"bytes"
-	//	"fmt"
+	"fmt"
 	"pkgMyPkg/compdocFile"
-	//	"strings"
+	"strings"
+	"unicode"
 
 	"github.com/lxn/walk"
 	"github.com/lxn/walk/declarative"
+	"github.com/lxn/win"
 )
-
-type TableItem struct {
-	ModuleName string
-	ModuleType string
-}
-
-type tableItemModle struct {
-	walk.SortedReflectTableModelBase
-	items []*TableItem
-}
-
-// 这一句做什么，不懂
-var _ walk.ReflectTableModel = new(tableItemModle)
 
 type control struct {
 	form *walk.MainWindow
 
 	// MenuItem
-	miSelectFile       *walk.Action
+	miSelectFile *walk.Action
+	miExit       *walk.Action
+
 	miUnProtectProject *walk.Action // 破解工程密码
+	miHideModule       *walk.Action // 隐藏模块
+	miUnHideModule     *walk.Action // 取消隐藏模块
+	miModifyFile       *walk.Action // 根据输入的地址和内容改写文件
+	miShowCode         *walk.Action // 是否需要解压缩模块流，显示模块的代码
 
 	lbFileName *walk.Label
 
 	hsplitter  *walk.Splitter
-	tableview  *walk.TableView // tableview显示模块名称、模块type
 	tableModle *tableItemModle // tableview添加items
+	tableview  *walk.TableView // tableview显示信息
 	tb         *walk.TextEdit
 }
 
@@ -51,28 +44,16 @@ func init() {
 
 	mw = &declarative.MainWindow{
 		AssignTo: &ct.form,
-		Title:    "测试",
-		Size:     declarative.Size{600, 600},
-		Font:     declarative.Font{PointSize: 10},
+		Title:    "vba查看",
+		//		Size:     declarative.Size{800, 800},
+		Font: declarative.Font{PointSize: 10},
+		Icon: getExcelIcon(),
 		// 菜单
 		MenuItems: []declarative.MenuItem{
-			declarative.Menu{
-				Text: "&Action",
-				Items: []declarative.MenuItem{
-					declarative.Action{
-						AssignTo:    &ct.miSelectFile,
-						Text:        "&选择文件",
-						OnTriggered: selectFile, // 触发，相当于click
-					},
-
-					declarative.Action{
-						AssignTo:    &ct.miUnProtectProject,
-						Text:        "&破解工程密码",
-						OnTriggered: unProtectProject,
-					},
-				}, // Items
-			},
-		}, // MenuItems
+			menuFile(), // "文件(&F)
+			menuActions(),
+			menuCheck(),
+		},
 
 		// 布局
 		Layout: declarative.VBox{},
@@ -80,37 +61,13 @@ func init() {
 		Children: []declarative.Widget{ // widget小部件
 			declarative.Label{
 				AssignTo: &ct.lbFileName,
-				Text:     "测试",
+				Text:     "文件名称",
 			},
 
 			declarative.HSplitter{
 				AssignTo: &ct.hsplitter,
 				Children: []declarative.Widget{
-					declarative.TableView{
-						AssignTo:      &ct.tableview,
-						StretchFactor: 2,
-
-						Columns: []declarative.TableViewColumn{
-							declarative.TableViewColumn{
-								DataMember: "ModuleName",
-								Width:      200,
-							},
-
-							declarative.TableViewColumn{
-								DataMember: "ModuleType",
-								Width:      100,
-							},
-						}, // TableView Columns
-						Model:   ct.tableModle,
-						MinSize: declarative.Size{300, 500},
-						MaxSize: declarative.Size{300, 500},
-						OnCurrentIndexChanged: func() {
-							if index := ct.tableview.CurrentIndex(); index > -1 {
-								showCode(ct.tableModle.items[index].ModuleName)
-							}
-
-						},
-					}, // TableView
+					tableviewShowInfo(), // TableView
 
 					declarative.TextEdit{
 						AssignTo: &ct.tb,
@@ -127,46 +84,80 @@ func init() {
 }
 
 func main() {
-	mw.Run()
+	mw.Create()
+	ct.miShowCode.SetChecked(true)
+	win.ShowWindow(ct.form.Handle(), win.SW_MAXIMIZE)
+	ct.form.Run()
+
 }
 
-func selectFile() {
-	fd := new(walk.FileDialog)
-	fd.ShowOpen(ct.form)
-	ct.lbFileName.SetText(fd.FilePath)
-	// 清空textbox
-	ct.tb.SetText("")
-	// 清空table
-	ct.tableModle.items = nil
-	ct.tableModle.addItem([][2]string{})
-
-	cfflag = true
-	if compdocFile.IsCompdocFile(fd.FilePath) {
-		cf = compdocFile.NewXlsFile(fd.FilePath)
-	} else if compdocFile.IsZip(fd.FilePath) {
-		cf = compdocFile.NewZipFile(fd.FilePath)
-	} else {
-		walk.MsgBox(ct.form, "title", "未知文件："+fd.FilePath, walk.MsgBoxIconInformation)
-		cfflag = false
-		return
-	}
-	err := compdocFile.CFInit(cf)
-	if err != nil {
-		walk.MsgBox(ct.form, "title", err.Error(), walk.MsgBoxIconInformation)
-		cfflag = false
-	} else {
-		showModule()
-	}
-	return
-}
-
-func showModule() {
+func showVBAInfo() {
 	if cfflag {
-		modules := cf.GetModuleName()
-		//		ct.tb.SetText(strings.Join(modules, "\r\n"))
-		ct.tableModle.addItem(modules)
+		info := cf.GetVBAInfo()
+		// 添加到tableview
+		ct.tableModle.addItem(info)
 	}
 }
+
+// 如果是其他流就显示字节
+// 返回ASCII的string，方便查找attribute
+// 如果不单独返回，就可能被换行了
+func showByte(name string) string {
+	b, address, addStep32 := cf.GetStream(name)
+
+	n := len(b)
+	var str []string = make([]string, 0, n/16+2)
+	var strASCII []string = make([]string, 0, n/16+2)
+	str = append(str, fmt.Sprintf("   index Address  % X ------ASCII-----", []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}))
+
+	addStep := int(addStep32)
+	// bAddress是addStep个记录1个开始地址
+	for i := 0; i < n/16*16; i += 16 {
+		pAddress := int(i / addStep)
+		str_tmp := fmt.Sprintf("%08X %08X % X ", i/16, address[pAddress]+int32(i%addStep), b[i:i+16])
+		strASCII_tmp := ""
+		for _, v := range b[i : i+16] {
+			if v < 127 && unicode.IsPrint(rune(v)) {
+				str_tmp += fmt.Sprintf("%c", v)
+				strASCII_tmp += fmt.Sprintf("%c", v)
+			} else {
+				str_tmp += "^"
+				strASCII_tmp += "^"
+			}
+		}
+		str = append(str, str_tmp)
+		strASCII = append(strASCII, strASCII_tmp)
+	}
+	// 最后可能还剩下0-15个
+	nleft := n % 16
+
+	if nleft > 0 {
+		var strChar string
+		var str_tmp string = fmt.Sprintf("%08X %08X ", n/16+1, address[len(address)-1]+int32(n/16*16%addStep))
+
+		strASCII_tmp := ""
+		for i := n / 16 * 16; i < n; i++ {
+			str_tmp += fmt.Sprintf("%02X ", b[i])
+			if unicode.IsPrint(rune(b[i])) {
+				strChar += fmt.Sprintf("%c", b[i])
+				strASCII_tmp += fmt.Sprintf("%c", b[i])
+			} else {
+				strChar += "^"
+				strASCII_tmp += "^"
+			}
+		}
+
+		str_tmp = str_tmp + strings.Repeat(" ", 3*(16-nleft))
+		str_tmp = str_tmp + strChar
+		str = append(str, str_tmp)
+		strASCII = append(strASCII, strASCII_tmp)
+	}
+
+	ct.tb.SetText(strings.Join(str, "\r\n"))
+	return strings.Join(strASCII, "")
+}
+
+// 如果是模块流就显示模块代码
 func showCode(moduleName string) {
 	if cfflag {
 		str := cf.GetModuleCode(moduleName)
@@ -180,32 +171,12 @@ func showCode(moduleName string) {
 		ct.tb.SetText(str)
 	}
 }
-func unProtectProject() {
-	if cfflag {
-		newFile, err := cf.UnProtectProject()
 
-		var str string
-		if err != nil {
-			str = err.Error()
-		} else {
-			str = "破解成功，新文件名：\r\n" + newFile
-		}
-		ct.tb.SetText(str)
+func getExcelIcon() *walk.Icon {
+	ic, err := walk.NewIconFromFile("E:\\04-github\\98-pic\\ico\\Excel32px.ico")
+	if err != nil {
+		fmt.Println(err)
+		return nil
 	}
-}
-
-func (me *tableItemModle) addItem(modules [][2]string) {
-	me.items = nil
-
-	for _, v := range modules {
-		item := &TableItem{}
-		item.ModuleName = v[0]
-		item.ModuleType = v[1]
-		me.items = append(me.items, item)
-	}
-	me.PublishRowsReset()
-}
-
-func (me *tableItemModle) Items() interface{} {
-	return me.items
+	return ic
 }
