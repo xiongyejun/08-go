@@ -21,6 +21,12 @@ func menuActions() declarative.Menu {
 			},
 
 			declarative.Action{
+				AssignTo:    &ct.miUnProtectSheetProtection,
+				Text:        "破解工作表保护密码(&S)",
+				OnTriggered: unProtectSheetProtection,
+			},
+
+			declarative.Action{
 				AssignTo:    &ct.miHideModule,
 				Text:        "隐藏模块(&H)",
 				OnTriggered: hideModule,
@@ -91,6 +97,7 @@ func hideModule() {
 	}
 }
 
+// 破解vba工程密码
 func unProtectProject() {
 	if cfflag {
 		newFile, err := cf.UnProtectProject()
@@ -99,7 +106,22 @@ func unProtectProject() {
 		if err != nil {
 			str = err.Error()
 		} else {
-			str = "破解成功，新文件名：\r\n" + newFile
+			str = "破解vba工程密码成功，新文件名：\r\n" + newFile
+		}
+		ct.tb.SetText(str)
+	}
+}
+
+// 破解工作表保护密码
+func unProtectSheetProtection() {
+	if cfflag {
+		newFile, err := cf.UnProtectSheetProtection()
+
+		var str string
+		if err != nil {
+			str = err.Error()
+		} else {
+			str = "破解工作表保护密码成功，新文件名：\r\n" + newFile
 		}
 		ct.tb.SetText(str)
 	}

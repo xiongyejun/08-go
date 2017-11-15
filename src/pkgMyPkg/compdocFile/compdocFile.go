@@ -22,6 +22,7 @@ type CF interface {
 	GetModuleName() [][2]string
 	GetAllCode() string
 	UnProtectProject() (newFile string, err error)
+	UnProtectSheetProtection() (newFile string, err error)
 	HideModule(moduleName string) (newFile string, err error)
 	UnHideModule(moduleName string) (newFile string, err error)
 	GetVBAInfo() (out []*OutStruct)

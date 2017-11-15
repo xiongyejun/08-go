@@ -50,11 +50,15 @@ func selectFile() {
 	}
 	err := compdocFile.CFInit(cf)
 	if err != nil {
-		walk.MsgBox(ct.form, "title", err.Error(), walk.MsgBoxIconInformation)
-		cfflag = false
+		if err.Error() == "err: 没有找到 vbaProject.bin" {
+			ct.tb.SetText(err.Error())
+		} else {
+			walk.MsgBox(ct.form, "title", err.Error(), walk.MsgBoxIconInformation)
+			cfflag = false
+		}
+
 	} else {
 		showVBAInfo()
-
 	}
 
 	return

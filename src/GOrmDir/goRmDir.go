@@ -29,7 +29,10 @@ func scanDir(strDir string) {
 				err := os.RemoveAll(strDir + string(os.PathSeparator) + v.Name())
 				if err != nil {
 					fmt.Println(err)
+				} else {
+					fmt.Println("delete dir:", strDir+string(os.PathSeparator)+v.Name())
 				}
+
 			} else {
 				scanDir(strDir + string(os.PathSeparator) + v.Name())
 			}

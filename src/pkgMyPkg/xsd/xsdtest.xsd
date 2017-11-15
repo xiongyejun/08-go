@@ -1,0 +1,29 @@
+
+  <xsd:simpleType name="ST_QID">
+    <xsd:annotation>
+      <xsd:documentation>
+
+        The qualified ID of a control.
+
+      </xsd:documentation>
+    </xsd:annotation>
+    <xsd:restriction base="xsd:QName">
+      <xsd:minLength value="1"/>
+      <xsd:maxLength value="1024"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <xsd:simpleType name="ST_StringLength">
+    <xsd:annotation>
+      <xsd:documentation>
+
+        A numeric argument for maximum string length in controls.
+        String length is limited to 1024 characters.
+
+      </xsd:documentation>
+    </xsd:annotation>
+    <xsd:restriction base="xsd:positiveInteger">
+      <xsd:minInclusive value="1"/>
+      <xsd:maxInclusive value="1024"/>
+    </xsd:restriction>
+  </xsd:simpleType>

@@ -87,6 +87,10 @@ func (me *xlsFile) unProtectProject() (err error) {
 	return nil
 }
 
+func (me *xlsFile) UnProtectSheetProtection() (newFile string, err error) {
+	return "", errors.New("03版不能破解，请先另存为07版本。")
+}
+
 // 取消隐藏模块
 func (me *xlsFile) UnHideModule(moduleName string) (newFile string, err error) {
 	err = me.unHideModule(moduleName)

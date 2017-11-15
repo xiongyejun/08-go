@@ -19,11 +19,12 @@ type control struct {
 	miSelectFile *walk.Action
 	miExit       *walk.Action
 
-	miUnProtectProject *walk.Action // 破解工程密码
-	miHideModule       *walk.Action // 隐藏模块
-	miUnHideModule     *walk.Action // 取消隐藏模块
-	miModifyFile       *walk.Action // 根据输入的地址和内容改写文件
-	miShowCode         *walk.Action // 是否需要解压缩模块流，显示模块的代码
+	miUnProtectProject         *walk.Action // 破解工程密码
+	miUnProtectSheetProtection *walk.Action // 破解工作表保护密码
+	miHideModule               *walk.Action // 隐藏模块
+	miUnHideModule             *walk.Action // 取消隐藏模块
+	miModifyFile               *walk.Action // 根据输入的地址和内容改写文件
+	miShowCode                 *walk.Action // 是否需要解压缩模块流，显示模块的代码
 
 	lbFileName *walk.Label
 

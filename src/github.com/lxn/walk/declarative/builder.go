@@ -160,6 +160,10 @@ func (b *Builder) InitWidget(d Widget, w walk.Window, customInit func() error) e
 		w.SetContextMenu(cm)
 	}
 
+	if handler := b.eventHandler("OnBoundsChanged"); handler != nil {
+		w.BoundsChanged().Attach(handler)
+	}
+
 	if handler := b.keyEventHandler("OnKeyDown"); handler != nil {
 		w.KeyDown().Attach(handler)
 	}
@@ -558,6 +562,10 @@ func (b *Builder) initProperties() error {
 func (b *Builder) conditionOrProperty(data Property) interface{} {
 	switch val := data.(type) {
 	case bindData:
+		if val.expression == "" {
+			return nil
+		}
+
 		e := &expression{
 			text:           val.expression,
 			subExprsByPath: subExpressions(make(map[string]walk.Expression)),

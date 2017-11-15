@@ -20,6 +20,7 @@ type TreeView struct {
 	MaxSize            Size
 	MinSize            Size
 	Name               string
+	OnBoundsChanged    walk.EventHandler
 	OnKeyDown          walk.KeyEventHandler
 	OnKeyPress         walk.KeyEventHandler
 	OnKeyUp            walk.KeyEventHandler
@@ -44,6 +45,7 @@ type TreeView struct {
 	// TreeView
 
 	AssignTo             **walk.TreeView
+	ItemHeight           int
 	Model                walk.TreeModel
 	OnCurrentItemChanged walk.EventHandler
 	OnExpandedChanged    walk.TreeItemEventHandler
@@ -57,6 +59,10 @@ func (tv TreeView) Create(builder *Builder) error {
 	}
 
 	return builder.InitWidget(tv, w, func() error {
+		if tv.ItemHeight > 0 {
+			w.SetItemHeight(tv.ItemHeight)
+		}
+
 		if err := w.SetModel(tv.Model); err != nil {
 			return err
 		}

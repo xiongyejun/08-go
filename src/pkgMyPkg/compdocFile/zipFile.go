@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 )
 
 // zipFile格式需要先解压缩读取xl\vbaProject.bin
@@ -29,6 +31,65 @@ func (me *zipFile) UnProtectProject() (newFile string, err error) {
 		return
 	}
 	return me.reWriteFile()
+}
+func (me *zipFile) UnProtectSheetProtection() (newFile string, err error) {
+	// 在xl\worksheets\ 下，找每个sheet 的：
+	// <sheetProtection algorithmName="SHA-512" hashValue="wX1JS/iCwuxonczqbHLNhh/z0pPa+PBgEf3lErY+va1dcRSoIGoLDtDs7fF6J3HtvUGeIovMVENm6cea6xwqkg==" saltValue="Bl2sMnDmaODE073NETbEuA==" spinCount="100000" sheet="1" objects="1" scenarios="1" formatCells="0" formatColumns="0" formatRows="0"/>
+	// 替换为空
+	// 读取zip文件
+	zipReader, err := zip.OpenReader(me.fileName)
+	if err != nil {
+		return newFile, err
+	}
+	defer zipReader.Close()
+	// 设置新文件名
+	strExt := filepath.Ext(me.fileName)
+	newFile = me.fileName[:len(me.fileName)-len(strExt)] + "(new)" + strExt
+	// 创建新文件
+	fw, err := os.OpenFile(newFile, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		return newFile, err
+	}
+	defer fw.Close()
+	// 创建zip writer
+	zipWriter := zip.NewWriter(fw)
+	defer zipWriter.Close()
+	// 循环zip文件中的文件
+	for _, f := range zipReader.File {
+		// 打开子文件
+		fr, err := f.Open()
+		if err != nil {
+			return newFile, err
+		}
+		// 读取子文件流
+		b, err := ioutil.ReadAll(fr)
+		if err != nil {
+			return newFile, err
+		}
+		defer fr.Close()
+		// 如果是vba，就用改写了的流
+		if strings.HasPrefix(f.Name, "xl/worksheets/") {
+			reg, _ := regexp.Compile("<sheetProtection .*?/>")
+			b = reg.ReplaceAll(b, []byte{})
+		}
+		// 在zipwriter中创建新文件
+		wr, err := zipWriter.Create(f.Name)
+		if err != nil {
+			return newFile, err
+		}
+		// 写入新文件的数据
+		n := 0
+		n, err = wr.Write(b)
+		if err != nil {
+			return newFile, err
+		}
+		if n < len(b) {
+			return newFile, errors.New("写入不完整")
+		}
+	}
+	err = zipWriter.Flush()
+
+	return newFile, err
 }
 
 // 隐藏模块
