@@ -85,7 +85,7 @@ func (me *unPackFile) unPackInit(packfile string) (err error) {
 	return nil
 }
 
-func (me *unPackFile) unPackFile(index int) (err error) {
+func (me *unPackFile) unPackFile(index int) (saveName string, err error) {
 	// 已经释放了的就不需要再一次释放
 	if _, ok := me.unPacked[index]; ok {
 		return
@@ -100,13 +100,13 @@ func (me *unPackFile) unPackFile(index int) (err error) {
 		return
 	}
 	// 保存文件	程序路径+index+文件后缀
-	saveName := currentPath + strconv.Itoa(index) + filepath.Ext(me.files[index].FileName)
+	saveName = currentPath + strconv.Itoa(index) + filepath.Ext(me.files[index].FileName)
 	if err = ioutil.WriteFile(saveName, b, 0666); err != nil {
 		return
 	}
 	// 记录文件名称，最后删除掉
 	me.unPackedFiles = append(me.unPackedFiles, saveName)
-	return nil
+	return saveName, nil
 }
 
 // 程序退出时候，删除已经释放的文件

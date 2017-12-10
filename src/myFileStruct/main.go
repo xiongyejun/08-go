@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 )
@@ -61,8 +62,12 @@ func handleCommands(tokens []string) {
 			fmt.Println(err)
 		} else {
 			// 释放文件
-			unPack_File.unPackFile(i)
-			// 打开文件
+			if sf, err := unPack_File.unPackFile(i); err != nil {
+				fmt.Println(err)
+			} else {
+				// 打开文件
+				openFolderFile(sf)
+			}
 
 		}
 	case "pack":
@@ -82,4 +87,14 @@ func handleCommands(tokens []string) {
 	default:
 		fmt.Println("Unrecognized lib command:", tokens)
 	}
+}
+
+// 使用cmd打开文件和文件夹
+func openFolderFile(path string) error {
+	// 第4个参数，是作为start的title，不加的话有空格的path是打不开的
+	cmd := exec.Command("cmd.exe", "/c", "start", "", path)
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	return nil
 }
