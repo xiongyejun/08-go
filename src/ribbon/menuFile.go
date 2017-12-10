@@ -2,7 +2,7 @@ package main
 
 import (
 	"archive/zip"
-	"encoding/xml"
+	//	"encoding/xml"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -182,16 +182,16 @@ func selectFile() {
 	}
 }
 
-func customUIToStruct(b []byte) (err error) {
-	fmt.Println(123)
-	if err = xml.Unmarshal(b, custom_UI); err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Printf("%#v\r\n", *custom_UI)
-	fmt.Println(custom_UI.Xmlns)
-	fmt.Println(custom_UI.XmlnsQ)
-	fmt.Printf("%#v\r\n", custom_UI.Ribbon.Tabs.TabSlice[0].GroupSlice[0])
+//func customUIToStruct(b []byte) (err error) {
+//	fmt.Println(123)
+//	if err = xml.Unmarshal(b, custom_UI); err != nil {
+//		fmt.Println(err)
+//		return
+//	}
+//	fmt.Printf("%#v\r\n", *custom_UI)
+//	fmt.Println(custom_UI.Xmlns)
+//	fmt.Println(custom_UI.XmlnsQ)
+//	fmt.Printf("%#v\r\n", custom_UI.Ribbon.Tabs.TabSlice[0].GroupSlice[0])
 
-	return
-}
+//	return
+//}

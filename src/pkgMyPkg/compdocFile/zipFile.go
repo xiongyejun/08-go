@@ -67,7 +67,7 @@ func (me *zipFile) UnProtectSheetProtection() (newFile string, err error) {
 			return newFile, err
 		}
 		defer fr.Close()
-		// 如果是vba，就用改写了的流
+		// 如果是sheet，就改写流
 		if strings.HasPrefix(f.Name, "xl/worksheets/") {
 			reg, _ := regexp.Compile("<sheetProtection .*?/>")
 			b = reg.ReplaceAll(b, []byte{})

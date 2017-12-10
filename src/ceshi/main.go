@@ -1,16 +1,16 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
 )
 
 func main() {
-	fmt.Println(isNumber("145"))
-}
+	var i int64 = 23421323
 
-func isNumber(str string) bool {
-	for i := range str {
-		fmt.Println(str[i])
-	}
-	return true
+	var b = make([]byte, 8)
+	binary.PutVarint(b, i)
+	fmt.Println(b)
+
+	fmt.Println(binary.Varint(b))
 }

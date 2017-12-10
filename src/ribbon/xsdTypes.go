@@ -1,4 +1,10 @@
+// 读取xsd用的结构，然后可以获取ribbon的结构
+
 package main
+
+import (
+	"encoding/xml"
+)
 
 // 0
 type schema struct {

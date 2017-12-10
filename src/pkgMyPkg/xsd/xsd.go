@@ -119,6 +119,7 @@ func main() {
 	fmt.Println("ok")
 }
 
+//
 func (me *out) printOut() {
 	var str []string = make([]string, 0)
 	var a2A byte = 'a' - 'A'
@@ -144,6 +145,7 @@ func (me *out) printOut() {
 	ioutil.WriteFile("out.txt", []byte(strings.Join(str, "")), 0666)
 }
 
+// 判断字符串是否都是数字
 func isNumber(str string) bool {
 	for i := range str {
 		if str[i] < '0' || str[i] > '9' {
