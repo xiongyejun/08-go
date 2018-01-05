@@ -32,3 +32,5 @@
 *.dSYM/
 *.su
 *.log
+
+*.bmp

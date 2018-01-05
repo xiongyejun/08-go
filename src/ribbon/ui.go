@@ -15,6 +15,7 @@ type uiControl struct {
 	miSelectFile *walk.Action
 	miSaveXml    *walk.Action
 	miOpenFile   *walk.Action
+	miSelectIcon *walk.Action
 	miQuit       *walk.Action
 
 	// 插入

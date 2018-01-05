@@ -57,6 +57,18 @@ func fileMenu() declarative.Menu {
 					}
 				},
 			},
+
+			declarative.Action{
+				AssignTo: &ct.miSelectIcon,
+				Text:     "选择icon(&I)",
+				OnTriggered: func() {
+
+					var imageMso string
+					showIcon(ct.form, &imageMso)
+					fmt.Println(imageMso)
+				},
+			},
+
 			declarative.Action{
 				AssignTo: &ct.miQuit,
 				Text:     "退出(&Q)",
