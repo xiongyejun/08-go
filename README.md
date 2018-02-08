@@ -22,3 +22,4 @@
 - [编码转换](github.com/axgle/mahonia)
 - [带附件mail](https://github.com/scorredoira/email)
 - [excel](https://github.com/aswjh/excel)
+- [go-sqlite3](http://godoc.org/github.com/mattn/go-sqlite3 "go-sqlite3")

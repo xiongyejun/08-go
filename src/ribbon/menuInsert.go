@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	START_customUI string = "<customUI xmlns=\"http://schemas.microsoft.com/office/2006/01/customui\">\r\n<ribbon>\r\n<tabs>\r\n"
+	START_customUI string = "<customUI xmlns=\"http://schemas.microsoft.com/office/2006/01/customui\"  onLoad=\"RibbonUI_onLoad\">\r\n<ribbon>\r\n<tabs>\r\n"
 	END_customUI   string = "</tabs>\r\n</ribbon>\r\n</customUI>"
 
 	START_TAB string = "  <tab id=\"TabID\" label=\"tabName\" insertAfterMso=\"TabDeveloper\">\r\n"
@@ -23,7 +23,7 @@ func insertMenu() declarative.Menu {
 				AssignTo: &ct.miCustomUI,
 				Text:     "CustomUI(&C)",
 				OnTriggered: func() {
-					insertXml(START_customUI + START_TAB + START_GROUP + END_GROUP + END_TAB + END_customUI)
+					insertXml(START_customUI + START_TAB + START_GROUP + END_GROUP + END_TAB + END_customUI + "\r\nSub RibbonUI_onLoad(Ribbon As IRibbonUI)\r\n    Ribbon.ActivateTab \"TabID\"\r\nEnd Sub")
 				},
 			},
 

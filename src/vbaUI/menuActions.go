@@ -31,11 +31,19 @@ func menuActions() declarative.Menu {
 				Text:        "隐藏模块(&H)",
 				OnTriggered: hideModule,
 			},
+
 			declarative.Action{
 				AssignTo:    &ct.miUnHideModule,
 				Text:        "取消隐藏模块(&U)",
 				OnTriggered: unHideModule,
 			},
+
+			declarative.Action{
+				AssignTo:    &ct.miUnHideAllModule,
+				Text:        "取消所有隐藏模块(&U)",
+				OnTriggered: unHideAllModule,
+			},
+
 			declarative.Action{
 				AssignTo:    &ct.miModifyFile,
 				Text:        "改写文件(&M)",
@@ -67,6 +75,19 @@ func modifyFile() {
 		}
 	}
 }
+
+func unHideAllModule() {
+	if cfflag {
+		for i := range ct.tableModle.items {
+			if ct.tableModle.items[i].Type == "模块流" {
+				cf.UnHideModule(ct.tableModle.items[i].Name)
+			}
+		}
+
+		walk.MsgBox(ct.form, "OK", "OK", walk.MsgBoxIconInformation)
+	}
+}
+
 func unHideModule() {
 	if cfflag {
 		if index := ct.tableview.CurrentIndex(); index > -1 {
