@@ -14,5 +14,6 @@ func main() {
 	err = cf.Parse()
 	fmt.Println(err)
 
-	cf.PrintOut()
+	b, err = cf.GetStream("EncryptionInfo")
+	fmt.Println(len(b), err)
 }

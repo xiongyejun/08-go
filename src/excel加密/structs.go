@@ -1,4 +1,4 @@
-package officeEncryp
+package main // officeEncryp
 
 // https://msdn.microsoft.com/en-us/library/dd943485(v=office.12).aspx
 
@@ -32,12 +32,14 @@ type Version struct {
 	vMinor uint16
 }
 
-// stream
+// 2.1.6
 type DataSpaceMap struct {
 	HeaderLength uint32 // 一个无符号整数，指定MapEntries数组中第一个条目之前的DataSpaceMap结构中的字节数。它必须等于0x00000008。
 	EntryCount   uint32 // MapEntries的数量
 	Map_Entries  []MapEntries
 }
+
+// 2.1.6.1
 type MapEntry struct {
 	Length                  uint32 // 指定DataSpaceMapEntry结构的大小（以字节为单位）。
 	ReferenceComponentCount uint32 // 指定ReferenceComponents数组中DataSpaceReferenceComponent项的
@@ -55,6 +57,7 @@ type DataSpaceInfo struct {
 	DataSpaceMapEntry
 }
 
+// 2.1.7
 type DataSpaceDefinition struct {
 	HeaderLength            uint32 // 指定TransformReferences字段之前的DataSpaceDefinition结构中的字节数。它务必是0x00000008。
 	TransformReferenceCount uint32 // 指定TransformReferences 数组中的项目数
@@ -70,9 +73,10 @@ type transform struct {
 
 // stream
 type Primary0x06 struct {
-	TransformInfoHeader
+	IRMDSTransformInfo
 }
 
+// 2.1.8
 type TransformInfoHeader struct {
 	TransformLength uint32 // 指定TransformName 字段之前的此结构中的字节数。
 	TransformType   uint32 // 指定要应用的变换的类型。它务必是0x00000001。
@@ -83,6 +87,7 @@ type TransformInfoHeader struct {
 	WriterVersion   Version
 }
 
+// 2.1.9
 type EncryptionTransformInfo struct {
 	EncryptionName      UTF_8_LP_P4 // 甲UTF-8-LP-P4 结构（部分2.1.3），指定的加密算法的名称。名称必须是加密算法的名称，例如“AES 128”，“AES 192”或“AES 256”。与可扩展加密一起使用时，此值由可扩展加密模块指定。
 	EncryptionBlockSize uint32      // 指定由EncryptionName指定的加密算法的块大小 。它必须是由高级加密标准（AES）指定的0x00000010 。与可扩展加密一起使用时，此值由可扩展加密模块指定。
@@ -90,7 +95,39 @@ type EncryptionTransformInfo struct {
 	Reserved            uint32      // 必须是0x00000004的值。
 }
 
-// https://msdn.microsoft.com/en-us/library/dd921578(v=office.12).aspx
+// 2.2.5
+type ExtensibilityHeader struct {
+	Length uint32 // It MUST be 0x00000004.
+}
+
+// 2.2.6
+type IRMDSTransformInfo struct {
+	TransformInfoHeader
+	ExtensibilityHeader
+	XrMLLicense UTF_8_LP_P4
+}
+
+// 2.2.9
+type EndUserLicenseHeader struct {
+	Length    uint32
+	ID_String UTF_8_LP_P4
+}
+
+// 2.2.10
+// ECMA-376	MUST be named "EncryptedPackage"
+// Other	MUST be named "\0x09DRMContent"
+type ProtectedContentStream struct {
+	Length   uint64
+	Contents []byte
+}
+
+// 2.2.11
+type ViewerContentStream struct {
+	Length   uint64
+	Contents []byte
+}
+
+// 2.3.2
 type EncryptionHeader struct {
 	Flags     int32 // EncryptionHeaderFlags
 	SizeExtra int32 // MUST be 0x00000000
@@ -114,7 +151,7 @@ type EncryptionHeader struct {
 	//	0x00000000				1	Determined by the application
 	//	0x00000000				0	SHA-1
 	//	0x00008004				0	SHA-1
-	KeySize int32
+	KeySize uint32
 	//	Algorithm	Value									Comment
 	//	Any			0x00000000								Determined by Flags
 	//	RC4			0x00000028 – 0x00000080 (inclusive)		8-bit increments
@@ -123,29 +160,30 @@ type EncryptionHeader struct {
 
 	Reserved1 int32
 	Reserved2 int32
-	// CSPName (variable)
+	CSPName   string // (variable)
 }
 
-//type EncryptionVerifier {
-//	SaltSize uint32 // It MUST be 0x00000010
-//	Salt [16]byte
-//	EncryptedVerifier [16]byte
-//	VerifierHashSize uint32
-////	EncryptedVerifierHash  (variable) RC4-20个字节。AES-32个字节
-//}
+// 2.3.3
+type EncryptionVerifier struct {
+	SaltSize              uint32 // It MUST be 0x00000010
+	Salt                  [16]byte
+	EncryptedVerifier     [16]byte
+	VerifierHashSize      uint32
+	EncryptedVerifierHash []byte //  (variable) RC4-20个字节。AES-32个字节
+}
 
 // 2.3.4.4
 type EncryptedPackage struct {
-	StreamSize uint8
-	//	EncryptedData (variable)
+	StreamSize    uint8
+	EncryptedData []byte // (variable)
 }
 
 // 2.3.4.5
 type EncryptionInfo struct {
-	EncryptionVersionInfo uint32
-	EncryptionHeaderFlags uint32
+	EncryptionVersionInfo Version
+	EncryptionHeaderFlags int32
 	EncryptionHeaderSize  uint32
-	//	EncryptionHeader (variable)
+	EncryptionHeader
 	//Field			Value
 	//Flags			The fCryptoAPI and fAES bits MUST be set. The fDocProps bit MUST be 0.
 	//SizeExtra		This value MUST be 0x00000000.
@@ -156,7 +194,7 @@ type EncryptionInfo struct {
 	//Reserved1		This value is undefined and MUST be ignored.
 	//Reserved2		This value MUST be 0x00000000 and MUST be ignored.
 	//CSPName		This value SHOULD<11> be set to either "Microsoft Enhanced RSA and AES Cryptographic Provider" or "Microsoft Enhanced RSA and AES Cryptographic Provider (Prototype)" as a null-terminated Unicode string.
-	//	EncryptionVerifier (variable)
+	EncryptionVerifier
 }
 
 type UNICODE_LP_P4 struct {
