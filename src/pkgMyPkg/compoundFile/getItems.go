@@ -3,21 +3,29 @@ package compoundFile
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 //func (me *CompoundFile) GetStorage(StorageName string) (s *Storage, err error) {
 //	return nil, nil
 //}
+// [6]DataSpaces\DataSpaceInfo\streamName
+func (me *CompoundFile) GetStream(streamPath string) (b []byte, err error) {
+	var s *Storage = me.Root
+	var arr []string = strings.Split(streamPath, `\`)
 
-func (me *CompoundFile) GetStream(StreamName string) (b []byte, err error) {
-	if index, ok := me.cfs.dic[StreamName]; !ok {
+	for i := 0; i < len(arr)-1; i++ {
+		if index, ok := s.storageDic[arr[i]]; !ok {
+			return nil, errors.New("不存在的路径，" + arr[i])
+		} else {
+			s = s.Storages[index]
+		}
+	}
+
+	if index, ok := s.streamDic[arr[len(arr)-1]]; !ok {
 		return nil, errors.New("不存在的Stream名称。")
 	} else {
-		if me.cfs.arrDir[index].CfType != 2 {
-			return nil, errors.New("不是Stream。")
-		} else {
-			return me.cfs.arrStream[index].stream.Bytes(), nil
-		}
+		return s.Streams[index].stream.Bytes(), nil
 	}
 }
 

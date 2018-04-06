@@ -14,6 +14,8 @@ type File struct {
 	DataSpaces0x06
 }
 
+// 包含所有必要信息的存储库
+// 用于将OLE复合文件转换到原始文档。
 // storage
 type DataSpaces0x06 struct {
 	DataSpaceVersionInfo
@@ -33,10 +35,11 @@ type Version struct {
 }
 
 // 2.1.6
+// 此流将受保护的内容与用于转换它的数据空间定义相关联。
 type DataSpaceMap struct {
 	HeaderLength uint32 // 一个无符号整数，指定MapEntries数组中第一个条目之前的DataSpaceMap结构中的字节数。它必须等于0x00000008。
 	EntryCount   uint32 // MapEntries的数量
-	Map_Entries  []MapEntries
+	Map_Entries  []MapEntry
 }
 
 // 2.1.6.1
@@ -54,7 +57,7 @@ type DataSpaceReferenceComponent struct {
 // storage
 type DataSpaceInfo struct {
 	DataSpace_Definition []DataSpaceDefinition
-	DataSpaceMapEntry
+	//	DataSpaceMapEntry
 }
 
 // 2.1.7

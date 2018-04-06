@@ -2,17 +2,12 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
-
-	"pkgMyPkg/compoundFile"
+	"path/filepath"
 )
 
 func main() {
-	b, _ := ioutil.ReadFile(`C:\Users\Administrator\Desktop\加密\nn.xlsm`)
-	cf, err := compoundFile.NewCompoundFile(b)
+	str := `C:\Users\Administrator\Desktop\111客户档案0403.xlsx`
 
-	err = cf.Parse()
-	fmt.Println(err)
-
-	cf.PrintOut()
+	fmt.Println(str)
+	fmt.Println(filepath.Base(str))
 }

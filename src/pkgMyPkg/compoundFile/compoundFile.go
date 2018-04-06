@@ -18,9 +18,13 @@ const (
 type Storage struct {
 	dir *dirInfo // Storage在文件byte里的目录信息
 
-	Streams  []*cfStream
-	Storages []*Storage
-	Parent   *Storage
+	Streams      []*cfStream
+	streamCount  int
+	streamDic    map[string]int
+	Storages     []*Storage
+	storageCount int
+	storageDic   map[string]int
+	Parent       *Storage
 }
 
 type CompoundFile struct {
@@ -277,14 +281,19 @@ func (me *CompoundFile) appendLeftRightSub(s *Storage, index int32) {
 
 // 添加元素到Storage
 func (me *CompoundFile) appendItemToStorage(s *Storage, index int32) int {
-	if me.cfs.arrDir[index].CfType == 1 {
+	if me.cfs.arrDir[index].CfType == 1 { // 1仓
 		tmp := me.newStorage(index)
 		tmp.Parent = s
+
+		s.storageDic[me.cfs.arrStream[index].name] = s.storageCount // 记录storage的下标
+		s.storageCount++
 		s.Storages = append(s.Storages, tmp)
 		// 是个storage，继续初始化
 		me.initStorage(tmp)
 		return 1
-	} else if me.cfs.arrDir[index].CfType == 2 {
+	} else if me.cfs.arrDir[index].CfType == 2 { // 2流
+		s.streamDic[me.cfs.arrStream[index].name] = s.streamCount // 记录stream的下标
+		s.streamCount++
 		s.Streams = append(s.Streams, me.cfs.arrStream[index])
 		return 2
 	} else {
@@ -300,6 +309,10 @@ func (me *CompoundFile) newStorage(index int32) *Storage {
 	s.dir.dir = me.cfs.arrDir[index]
 	s.dir.dirAddr = me.cfs.arrDirAddr[index]
 	s.dir.name = me.cfs.arrStream[index].name
+
+	s.storageDic = make(map[string]int)
+	s.streamDic = make(map[string]int)
+
 	return s
 }
 

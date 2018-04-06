@@ -6,6 +6,8 @@ import (
 	"github.com/lxn/walk"
 	"github.com/lxn/walk/declarative"
 	"github.com/lxn/win"
+
+	"pkgAPI/comdlg32"
 )
 
 var returnValues []string
