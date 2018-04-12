@@ -1,13 +1,20 @@
 package main
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
-	"path/filepath"
 )
 
 func main() {
-	str := `C:\Users\Administrator\Desktop\111客户档案0403.xlsx`
+	str := "19850522"
 
-	fmt.Println(str)
-	fmt.Println(filepath.Base(str))
+	sh1 := sha1.New()
+
+	if _, err := sh1.Write([]byte(str)); err != nil {
+		fmt.Println(err)
+		return
+	}
+	b := sh1.Sum(nil)
+	fmt.Println(hex.EncodeToString(b))
 }

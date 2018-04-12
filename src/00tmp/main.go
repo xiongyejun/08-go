@@ -1,40 +1,25 @@
 package main
 
 import (
-	//	"database/sql"
 	"fmt"
-	"odbc"
 )
 
 func main() {
+	str := "abc,hao,de"
+	var key []byte = []byte("19850522")
+	fmt.Printf("src = %s\r\n", str)
 
-	conn, err := odbc.Connect("odbc", "driver={Microsoft Access Driver (*.mdb)};dbq=d:\\test.mdb")
+	c, err := desEncryptString(str, key)
 	if err != nil {
-		fmt.Println("Connecting Error")
+		fmt.Println(err)
 		return
 	}
-	defer conn.Close()
-	stmt, err := conn.Prepare("select * from test") //ALTER TABLE tb ALTER COLUMN aa Long
+	fmt.Printf("encrypt = %s\r\n", c)
+
+	d, err := desDecryptString(c, key)
 	if err != nil {
-		fmt.Println("Query Error")
+		fmt.Println(err)
 		return
 	}
-	defer stmt.Close()
-	//	row, err := stmt.Query()
-	//	if err != nil {
-	//		fmt.Print(err)
-	//		fmt.Println("Query Error")
-	//		return
-	//	}
-	//	defer row.Close()
-	//	for row.Next() {
-	//		var ID string
-	//		var SequenceNumber int
-	//		var ValueCode string
-	//		if err := row.Scan(&ID, &SequenceNumber, &ValueCode); err == nil {
-	//			fmt.Println(ID, SequenceNumber, ValueCode)
-	//		}
-	//	}
-	//	fmt.Printf("%s\n", "finish")
-	//	return
+	fmt.Printf(" desDecrypt = %s\r\n", d)
 }

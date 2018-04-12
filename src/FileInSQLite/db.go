@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -10,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -17,10 +17,11 @@ import (
 type DataStruct struct {
 	DBPath       string
 	tableName    string
-	fileSavePath string
+	fileSavePath string // show的时候，文件读取保存的位置
 
 	db *sql.DB
 
+	key     []byte         // 密码
 	dicShow map[int]string // key:id	item:saveName
 }
 
@@ -28,10 +29,26 @@ var d *DataStruct
 
 // 打开数据库
 func (me *DataStruct) getDB() (err error) {
-	if me.db, err = sql.Open("sqlite3", d.DBPath); err != nil {
-		return err
+	if _, err = os.Stat(d.DBPath); err == nil {
+		if me.db, err = sql.Open("sqlite3", d.DBPath); err != nil {
+			return
+		} else {
+			fmt.Println("成功打开数据库。")
+			return nil
+		}
 	} else {
-		return nil
+		// 不存在数据库的情况下进行创建
+		if me.db, err = sql.Open("sqlite3", d.DBPath); err != nil {
+			return
+		} else {
+			sqlStmt := `create table files (id integer not null primary key autoincrement, name text not null, star integer not null, ext text not null, bytes blob not null);`
+			if _, err = d.db.Exec(sqlStmt); err != nil {
+				return
+			} else {
+				fmt.Println("成功创建数据库。")
+				return nil
+			}
+		}
 	}
 }
 
@@ -45,7 +62,7 @@ func (me *DataStruct) insert(filesPath []string) (err error) {
 	defer tx.Commit()
 
 	var stmt *sql.Stmt
-	if stmt, err = tx.Prepare("insert into " + me.tableName + "(id,name,bytes) values(?,?,?)"); err != nil {
+	if stmt, err = tx.Prepare("insert into " + me.tableName + "(id,name,star,ext,bytes) values(?,?,?,?,?)"); err != nil {
 		return err
 	}
 	defer stmt.Close()
@@ -56,10 +73,20 @@ func (me *DataStruct) insert(filesPath []string) (err error) {
 		} else {
 			// 读取文件字节
 			var b []byte
+
 			if b, err = ioutil.ReadFile(filesPath[i]); err != nil {
-				fmt.Println(err)
+				return err
 			} else {
-				if _, err = stmt.Exec(nil, filepath.Base(filesPath[i]), b); err != nil {
+				strExt := filepath.Ext(filesPath[i])
+				name := strings.TrimSuffix(filepath.Base(filesPath[i]), strExt)
+				// 加密
+				if b, err = desEncrypt(b, d.key); err != nil {
+					return
+				}
+				if name, err = desEncryptString(name, d.key); err != nil {
+					return
+				}
+				if _, err = stmt.Exec(nil, name, 0, strExt, b); err != nil {
 					fmt.Println(err)
 				}
 			}
@@ -69,21 +96,58 @@ func (me *DataStruct) insert(filesPath []string) (err error) {
 	return nil
 }
 
+// 删除文件
+func (me *DataStruct) del(id int) (err error) {
+	sqlStmt := `delete from ` + me.tableName + ` where id = ` + strconv.Itoa(id)
+	if _, err = me.db.Exec(sqlStmt); err != nil {
+		return
+	}
+	return nil
+}
+
+// 重命名
+func (me *DataStruct) rn(id int, newName string) (err error) {
+	if newName, err = desEncryptString(newName, d.key); err != nil {
+		return
+	}
+	sqlStmt := `update ` + me.tableName + ` set name="` + newName + `" where id = ` + strconv.Itoa(id)
+	if _, err = me.db.Exec(sqlStmt); err != nil {
+		return
+	}
+	return nil
+}
+
+// 标星
+func (me *DataStruct) star(id int, iStar int) (err error) {
+	sqlStmt := `update ` + me.tableName + ` set star=` + strconv.Itoa(iStar) + ` where id = ` + strconv.Itoa(id)
+	if _, err = me.db.Exec(sqlStmt); err != nil {
+		return
+	}
+	return nil
+}
+
 // 列出所有文件
 func (me *DataStruct) list() (err error) {
 	var rows *sql.Rows
-	if rows, err = d.db.Query("select id,name from " + me.tableName); err != nil {
+	if rows, err = d.db.Query("select id,star,name,ext from " + me.tableName); err != nil {
 		return
 	}
 	defer rows.Close()
 
+	fmt.Println("id\tstar\tname")
 	for rows.Next() {
 		var id int
+		var star int
 		var name string
-		if err = rows.Scan(&id, &name); err != nil {
+		var ext string
+		if err = rows.Scan(&id, &star, &name, &ext); err != nil {
 			return
 		}
-		fmt.Printf("%3d %s\r\n", id, name)
+		if name, err = desDecryptString(name, d.key); err != nil {
+			return
+		}
+
+		fmt.Printf("%3d\t%3d\t%s\r\n", id, star, name+ext)
 	}
 
 	if err = rows.Err(); err != nil {
@@ -93,30 +157,37 @@ func (me *DataStruct) list() (err error) {
 	return nil
 }
 
-// 读取文件bytes，保存在exe的路径下，并打开
+// 读取文件bytes，保存在当前程序的路径下，并打开
 func (me *DataStruct) show(id int) (err error) {
 	var name string
+	var ext string
 	var ok bool
 	// 先判断是否已经存在了
 	if name, ok = me.dicShow[id]; !ok {
 		var stmt *sql.Stmt
-		if stmt, err = d.db.Prepare("select name,bytes from " + me.tableName + " where id = ?"); err != nil {
+		if stmt, err = d.db.Prepare("select name,ext,bytes from " + me.tableName + " where id = ?"); err != nil {
 			return
 		}
 		defer stmt.Close()
 
-		var b interface{}
-
-		if err = stmt.QueryRow(strconv.Itoa(id)).Scan(&name, &b); err != nil {
-			return errors.New("stmt.QueryRow\r\n") //+ err.Error())
-		}
-
-		name = me.fileSavePath + strconv.Itoa(id) + filepath.Ext(name)
-		fmt.Println(name)
-		if err = ioutil.WriteFile(name, b.([]byte), 0666); err != nil {
+		var bi interface{}
+		if err = stmt.QueryRow(strconv.Itoa(id)).Scan(&name, &ext, &bi); err != nil {
 			return
 		}
-		me.dicShow[id] = name
+
+		name = me.fileSavePath + strconv.Itoa(id) + ext
+
+		if b, ok := bi.([]byte); ok {
+			if b, err = desDecrypt(b, d.key); err != nil {
+				return
+			}
+			if err = ioutil.WriteFile(name, b, 0666); err != nil {
+				return
+			}
+			// 记录打开过的，退出时删除
+			me.dicShow[id] = name
+		}
+
 	} /* else {
 		fmt.Println("已经有了")
 	}*/
@@ -128,13 +199,14 @@ func (me *DataStruct) show(id int) (err error) {
 // 删除已经释放的文件
 func (me *DataStruct) deleteShow() {
 	for _, item := range me.dicShow {
-		os.Remove(item)
+		if err := os.Remove(item); err != nil {
+			fmt.Println(err)
+		}
 	}
 }
 
 // 使用cmd打开文件和文件夹
 func openFolderFile(path string) error {
-	fmt.Println("open:", path)
 	// 第4个参数，是作为start的title，不加的话有空格的path是打不开的
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {

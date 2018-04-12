@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"strconv"
@@ -15,7 +17,7 @@ import (
 
 func init() {
 	d = new(DataStruct)
-	d.DBPath = `E:\Files.db`
+	d.DBPath = `E:\VisualStudio2015\Templates\ItemTemplates\扩展性\asldjfldsajfwo`
 	d.tableName = "files"
 	d.fileSavePath, _ = os.Getwd()
 	d.fileSavePath += string(os.PathSeparator)
@@ -23,6 +25,18 @@ func init() {
 	d.dicShow = make(map[int]string)
 }
 func main() {
+	if len(os.Args) > 1 {
+		d.key = []byte(os.Args[1])
+	} else {
+		fmt.Println("未输入密码。")
+		return
+	}
+
+	if !checkKey(d.key) {
+		fmt.Println("密码错误。")
+		return
+	}
+
 	if err := d.getDB(); err != nil {
 		fmt.Println(err)
 	}
@@ -42,11 +56,22 @@ func main() {
 		handleCommands(tokens)
 	}
 
-	//	sqlStmt := `create table files (id integer primary key autoincrement, name text, bytes blob);`
-	//	if _, err := d.db.Exec(sqlStmt); err != nil {
-	//		fmt.Println(err)
-	//	}
+}
 
+func checkKey(key []byte) bool {
+	sha := sha1.New()
+
+	if _, err := sha.Write(key); err != nil {
+		fmt.Println(err)
+		return false
+	}
+
+	b := sha.Sum(nil)
+	if hex.EncodeToString(b) == "583af6c52d1ce8900d767c0f73c2db88f60ce8d1" {
+		return true
+	} else {
+		return false
+	}
 }
 
 func handleCommands(tokens []string) {
@@ -61,8 +86,20 @@ func handleCommands(tokens []string) {
 			}
 
 		}
+	case "del":
+		if len(tokens) != 2 {
+			fmt.Println(`输入的命令不正确del <id> -- 删除文件`)
+			return
+		}
+		if n, err := strconv.Atoi(tokens[1]); err != nil {
+			fmt.Println(err)
+		} else {
+			if err := d.del(n); err != nil {
+				fmt.Println(err)
+			}
+		}
 
-	case "list":
+	case "ls":
 		cl := colorPrint.NewColorDll()
 		cl.SetColor(colorPrint.White, colorPrint.DarkMagenta)
 
@@ -83,18 +120,56 @@ func handleCommands(tokens []string) {
 				fmt.Println(err)
 			}
 		}
+
+	case "rn":
+		if len(tokens) != 3 {
+			fmt.Println(`输入的命令不正确 rn <id> <newName> -- 重命名`)
+			return
+		}
+		if n, err := strconv.Atoi(tokens[1]); err != nil {
+			fmt.Println(err)
+		} else {
+			if err := d.rn(n, tokens[2]); err != nil {
+				fmt.Println(err)
+			}
+		}
+	case "star":
+		if len(tokens) != 3 {
+			fmt.Println(`输入的命令不正确 star <id> <int> -- 标星`)
+			return
+		}
+		if id, err := strconv.Atoi(tokens[1]); err != nil {
+			fmt.Println(err)
+		} else {
+			if n, err := strconv.Atoi(tokens[2]); err != nil {
+				fmt.Println(err)
+			} else {
+				if err := d.star(id, n); err != nil {
+					fmt.Println(err)
+				}
+			}
+
+		}
+
 	default:
 		fmt.Println("Unrecognized lib command:", tokens)
 	}
 }
 
 func printCmd() {
+	cl := colorPrint.NewColorDll()
+	cl.SetColor(colorPrint.Green, colorPrint.Black)
+
 	fmt.Println(`
  Enter following commands to control:
  add -- 添加文件
- list -- 查看文件列表
+ del <id> -- 删除文件
+ ls -- 查看文件列表
  show <id> -- 打开文件
  rn <id> <newName> -- 重命名
+ star <id> <int> -- 标星
  e或者q -- 退出 
  `)
+
+	cl.UnSetColor()
 }
