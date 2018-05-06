@@ -19,6 +19,7 @@ type Storage struct {
 	dir *dirInfo // Storage在文件byte里的目录信息
 
 	Streams      []*cfStream
+	streamSize   []int32
 	streamCount  int
 	streamDic    map[string]int
 	Storages     []*Storage
@@ -295,6 +296,7 @@ func (me *CompoundFile) appendItemToStorage(s *Storage, index int32) int {
 		s.streamDic[me.cfs.arrStream[index].name] = s.streamCount // 记录stream的下标
 		s.streamCount++
 		s.Streams = append(s.Streams, me.cfs.arrStream[index])
+		s.streamSize = append(s.streamSize, me.cfs.arrDir[index].Stream_size)
 		return 2
 	} else {
 		fmt.Println("err")

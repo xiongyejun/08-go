@@ -23,6 +23,7 @@ var pid int
 func main() {
 	pid = os.Getpid()
 	getSet()
+
 	openURL("http://localhost:9090/?strURL=" + dic["str_URL"] + "^&dir=1")
 
 	http.HandleFunc("/", handleFunc)
@@ -31,14 +32,8 @@ func main() {
 
 // 读取一些设置
 func getSet() {
-	// 不需要删除，直接更新就可以了
-	//	for k, _ := range dic {
-	//		delete(dic, k)
-	//	}
 	file, _ := exec.LookPath(os.Args[0])
 	path := filepath.Dir(file)
-
-	//	fmt.Println(path)
 
 	f, err := os.Open(path + "\\set.txt")
 	if err != nil {
@@ -91,11 +86,13 @@ func handleFunc(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "<!DOCTYPE html>\n<html>\n")
+	// 淡蓝底色	C7EDCC
 	fmt.Fprintf(w, "<style type=\"text/css\"> body {font-size:24px;line-height:1.5;}</style>\n <body onunload=\"closeGo()\" bgcolor=\"#C7EDCC\">\n ")
 	// 插入退出按钮
 	fmt.Fprintf(w, exitHtml())
 	// 如果请求中含有strURL，就去获取strURL地址的网页源码
 	str_html := getHtml(strURL[0])
+	//	fmt.Println(str_html)
 	isDir := r.Form["dir"]
 	if len(isDir) == 0 {
 		str_html = getHtmlId(str_html, dic["str_id"]) // "<div id=\"zjneirong\">")
@@ -106,6 +103,7 @@ func handleFunc(w http.ResponseWriter, r *http.Request) {
 		reg, _ := regexp.Compile(str_patten)
 		submatchall := reg.FindAllString(str_html, -1)
 		str_html = strings.Join(submatchall, "<br>")
+		//		fmt.Println(str_html)
 
 		// 有的是完整的地址，有的不是
 		if strings.Contains(str_html, "http://www.") {

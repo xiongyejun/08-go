@@ -25,7 +25,8 @@ func (me *CompoundFile) GetStream(streamPath string) (b []byte, err error) {
 	if index, ok := s.streamDic[arr[len(arr)-1]]; !ok {
 		return nil, errors.New("不存在的Stream名称。")
 	} else {
-		return s.Streams[index].stream.Bytes(), nil
+		// 读取stream是按照512的大小读取的，但最后1个可能没有512
+		return s.Streams[index].stream.Bytes()[:s.streamSize[index]], nil
 	}
 }
 

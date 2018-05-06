@@ -12,7 +12,7 @@ func main() {
 	var cf *compoundFile.CompoundFile
 	var err error
 	var b []byte
-	if b, err = ioutil.ReadFile(`C:\Users\Administrator\Desktop\加密\密码1.xlsm`); err != nil {
+	if b, err = ioutil.ReadFile(`C:\Users\Administrator\Desktop\vbaProject.bin`); err != nil {
 		fmt.Println(err)
 		return
 	}
@@ -27,7 +27,7 @@ func main() {
 		return
 	}
 
-	b, err = cf.GetStream(string([]byte{6}) + `DataSpaces\DataSpaceMap`)
+	b, err = cf.GetStream(`VBA\dir\ThisWorkbook`)
 	fmt.Println(len(b), err)
 
 	cf.PrintOut()

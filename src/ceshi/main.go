@@ -1,20 +1,11 @@
 package main
 
 import (
-	"crypto/sha1"
-	"encoding/hex"
 	"fmt"
+	"path/filepath"
 )
 
 func main() {
-	str := "19850522"
-
-	sh1 := sha1.New()
-
-	if _, err := sh1.Write([]byte(str)); err != nil {
-		fmt.Println(err)
-		return
-	}
-	b := sh1.Sum(nil)
-	fmt.Println(hex.EncodeToString(b))
+	fmt.Println(filepath.Dir(`C:\Users\Administrator\Desktop\vbaProject.bin`))
+	fmt.Println(filepath.Clean(`C:\Users\Administrator\Desktop\vbaProject.bin`))
 }

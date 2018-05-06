@@ -23,6 +23,7 @@ type DataStruct struct {
 
 	key     []byte         // 密码
 	dicShow map[int]string // key:id	item:saveName
+	pID     []int          // 记录id的slice，方便用0、1、2……的序号
 }
 
 var d *DataStruct
@@ -97,7 +98,8 @@ func (me *DataStruct) insert(filesPath []string) (err error) {
 }
 
 // 删除文件
-func (me *DataStruct) del(id int) (err error) {
+func (me *DataStruct) del(pID int) (err error) {
+	id := me.pID[pID]
 	sqlStmt := `delete from ` + me.tableName + ` where id = ` + strconv.Itoa(id)
 	if _, err = me.db.Exec(sqlStmt); err != nil {
 		return
@@ -106,7 +108,8 @@ func (me *DataStruct) del(id int) (err error) {
 }
 
 // 重命名
-func (me *DataStruct) rn(id int, newName string) (err error) {
+func (me *DataStruct) rn(pID int, newName string) (err error) {
+	id := me.pID[pID]
 	if newName, err = desEncryptString(newName, d.key); err != nil {
 		return
 	}
@@ -118,7 +121,8 @@ func (me *DataStruct) rn(id int, newName string) (err error) {
 }
 
 // 标星
-func (me *DataStruct) star(id int, iStar int) (err error) {
+func (me *DataStruct) star(pID int, iStar int) (err error) {
+	id := me.pID[pID]
 	sqlStmt := `update ` + me.tableName + ` set star=` + strconv.Itoa(iStar) + ` where id = ` + strconv.Itoa(id)
 	if _, err = me.db.Exec(sqlStmt); err != nil {
 		return
@@ -134,7 +138,8 @@ func (me *DataStruct) list() (err error) {
 	}
 	defer rows.Close()
 
-	fmt.Println("id\tstar\tname")
+	me.pID = make([]int, 0)
+	var pIDCount int = 0
 	for rows.Next() {
 		var id int
 		var star int
@@ -147,7 +152,9 @@ func (me *DataStruct) list() (err error) {
 			return
 		}
 
-		fmt.Printf("%3d\t%3d\t%s\r\n", id, star, name+ext)
+		me.pID = append(me.pID, id)
+		fmt.Printf("%3d\t%3d\t%s\r\n", pIDCount, star, name+ext)
+		pIDCount++
 	}
 
 	if err = rows.Err(); err != nil {
@@ -158,10 +165,12 @@ func (me *DataStruct) list() (err error) {
 }
 
 // 读取文件bytes，保存在当前程序的路径下，并打开
-func (me *DataStruct) show(id int) (err error) {
+func (me *DataStruct) show(pID int) (err error) {
 	var name string
 	var ext string
 	var ok bool
+
+	id := me.pID[pID]
 	// 先判断是否已经存在了
 	if name, ok = me.dicShow[id]; !ok {
 		var stmt *sql.Stmt
@@ -181,11 +190,13 @@ func (me *DataStruct) show(id int) (err error) {
 			if b, err = desDecrypt(b, d.key); err != nil {
 				return
 			}
+
 			if err = ioutil.WriteFile(name, b, 0666); err != nil {
 				return
 			}
 			// 记录打开过的，退出时删除
 			me.dicShow[id] = name
+
 		}
 
 	} /* else {
