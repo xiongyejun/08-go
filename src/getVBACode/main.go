@@ -42,11 +42,14 @@ func main() {
 func (me *dataStruct) getVBACode() (err error) {
 	// 判断一下是否是zip文件
 	var b []byte
+	var str03 string // 03版本的是放在_VBA_PROJECT_CUR\目录之下
+
 	if IsZip(me.fileName) {
 		if b, err = readVbaProjectBin(me.fileName); err != nil {
 			return
 		}
 	} else {
+		str03 = `_VBA_PROJECT_CUR\`
 		if b, err = ioutil.ReadFile(me.fileName); err != nil {
 			return
 		}
@@ -61,7 +64,7 @@ func (me *dataStruct) getVBACode() (err error) {
 
 	// 读取dir目录
 	var bDir []byte
-	if bDir, err = me.cf.GetStream(`VBA\dir`); err != nil {
+	if bDir, err = me.cf.GetStream(str03 + `VBA\dir`); err != nil {
 		return
 	}
 	// 读取的dir byte需压进行解压
@@ -77,7 +80,7 @@ func (me *dataStruct) getVBACode() (err error) {
 		// 保存文件
 		for i := range mi {
 			fmt.Println(mi[i].Name)
-			if b, err = me.cf.GetStream(`VBA\` + mi[i].Name); err != nil {
+			if b, err = me.cf.GetStream(str03 + `VBA\` + mi[i].Name); err != nil {
 				return
 			} else {
 				rle = rleVBA.NewRLE(b[mi[i].TextOffset:])
