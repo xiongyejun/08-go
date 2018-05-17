@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -79,11 +80,13 @@ func (me *DataStruct) insert(filesPath []string) (err error) {
 				return err
 			} else {
 				strExt := filepath.Ext(filesPath[i])
+				// 去除文件名的后缀
 				name := strings.TrimSuffix(filepath.Base(filesPath[i]), strExt)
-				// 加密
+				// 加密文件byte
 				if b, err = desEncrypt(b, d.key); err != nil {
 					return
 				}
+				// 加密文件名称
 				if name, err = desEncryptString(name, d.key); err != nil {
 					return
 				}
@@ -148,6 +151,7 @@ func (me *DataStruct) list() (err error) {
 		if err = rows.Scan(&id, &star, &name, &ext); err != nil {
 			return
 		}
+		// 解密文件名
 		if name, err = desDecryptString(name, d.key); err != nil {
 			return
 		}
@@ -170,6 +174,9 @@ func (me *DataStruct) show(pID int) (err error) {
 	var ext string
 	var ok bool
 
+	if pID >= len(me.pID) {
+		return errors.New("不存在的索引。")
+	}
 	id := me.pID[pID]
 	// 先判断是否已经存在了
 	if name, ok = me.dicShow[id]; !ok {
@@ -183,14 +190,15 @@ func (me *DataStruct) show(pID int) (err error) {
 		if err = stmt.QueryRow(strconv.Itoa(id)).Scan(&name, &ext, &bi); err != nil {
 			return
 		}
-
+		// 文件保存路径
 		name = me.fileSavePath + strconv.Itoa(id) + ext
-
+		// 读取文件的byte
 		if b, ok := bi.([]byte); ok {
+			// 解密byte
 			if b, err = desDecrypt(b, d.key); err != nil {
 				return
 			}
-
+			// 保存文件
 			if err = ioutil.WriteFile(name, b, 0666); err != nil {
 				return
 			}
