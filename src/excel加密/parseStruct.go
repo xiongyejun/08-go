@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -8,15 +9,18 @@ import (
 	"pkgMyPkg/compoundFile"
 )
 
-type MyData struct {
-	cf *compoundFile.CompoundFile
+type myData struct {
+	cf             *compoundFile.CompoundFile
+	encryptionInfo *EncryptionInfo
 
 	dataSpaceMap              *DataSpaceMap
 	strongEncryptionDataSpace *DataSpaceDefinition
 	primary                   *IRMDSTransformInfo
 }
 
-func (me *MyData) Parse(fileName string) (err error) {
+func Parse(fileName string) (iEncryptedType IEncryptedType, err error) {
+	var me *myData = &myData{}
+
 	var b []byte
 	if b, err = ioutil.ReadFile(fileName); err != nil {
 		return
@@ -30,14 +34,61 @@ func (me *MyData) Parse(fileName string) (err error) {
 		return
 	}
 
-	// 读取DataSpaceMap
-	if err = me.getDataSpaceMap(); err != nil {
+	// 读取EncryptionInfo，判断使用的是什么加密方式
+	if iEncryptedType, err = me.getEncryptionInfo(); err != nil {
 		return
 	}
-	return nil
+	if err = iEncryptedType.initData(); err != nil {
+		return
+	}
+
+	//	// 读取DataSpaceMap
+	//	if err = me.getDataSpaceMap(); err != nil {
+	//		return
+	//	}
+
+	return
 }
 
-func (me *MyData) getDataSpaceMap() (err error) {
+// 读取EncryptionInfo -- 用来判断使用的是哪种加密方式
+func (me *myData) getEncryptionInfo() (iEncryptedType IEncryptedType, err error) {
+	var b []byte
+	if b, err = me.cf.GetStream(`EncryptionInfo`); err != nil {
+		return
+	}
+
+	me.encryptionInfo = new(EncryptionInfo)
+
+	var startIndex int = 0
+	if startIndex, err = readVersion(&me.encryptionInfo.EncryptionVersionInfo, b, startIndex); err != nil {
+		return
+	}
+	if me.encryptionInfo.EncryptionVersionInfo.vMajor == 0x0004 &&
+		me.encryptionInfo.EncryptionVersionInfo.vMinor == 0x0004 {
+		// Agile敏捷 Encryption
+		fmt.Println("Agile敏捷 Encryption")
+		agl := &agile{}
+		agl.b = b
+		return agl, nil
+
+	} else if (me.encryptionInfo.EncryptionVersionInfo.vMajor == 0x0002 ||
+		me.encryptionInfo.EncryptionVersionInfo.vMajor == 0x0003 ||
+		me.encryptionInfo.EncryptionVersionInfo.vMajor == 0x0004) &&
+		me.encryptionInfo.EncryptionVersionInfo.vMinor == 0x0002 {
+		// Standard Encryption
+		fmt.Println("Standard Encryption")
+
+	} else if (me.encryptionInfo.EncryptionVersionInfo.vMajor == 0x0003 ||
+		me.encryptionInfo.EncryptionVersionInfo.vMajor == 0x0004) &&
+		me.encryptionInfo.EncryptionVersionInfo.vMinor == 0x0003 {
+		// Extensible Encryption
+		fmt.Println("Extensible Encryption")
+	}
+
+	return nil, nil
+}
+
+func (me *myData) getDataSpaceMap() (err error) {
 	var b []byte
 	if b, err = me.cf.GetStream(string([]byte{6}) + `DataSpaces\DataSpaceMap`); err != nil {
 		return
@@ -97,15 +148,20 @@ func (me *MyData) getDataSpaceMap() (err error) {
 
 	}
 	// The \0x06DataSpaces\DataSpaceInfo storage MUST contain a stream named "StrongEncryptionDataSpace"
-	if string(me.dataSpaceMap.Map_Entries[0].DataSpaceName.Data) == string([]byte{0x53, 0x0, 0x74, 0x0, 0x72, 0x0, 0x6f, 0x0, 0x6e, 0x0, 0x67, 0x0, 0x45, 0x0, 0x6e, 0x0, 0x63, 0x0, 0x72, 0x0, 0x79, 0x0, 0x70, 0x0, 0x74, 0x0, 0x69, 0x0, 0x6f, 0x0, 0x6e, 0x0, 0x44, 0x0, 0x61, 0x0, 0x74, 0x0, 0x61, 0x0, 0x53, 0x0, 0x70, 0x0, 0x61, 0x0, 0x63, 0x0, 0x65, 0x0}) {
+	if bytes.Compare(me.dataSpaceMap.Map_Entries[0].DataSpaceName.Data, []byte{0x53, 0x0, 0x74, 0x0, 0x72, 0x0, 0x6f, 0x0, 0x6e, 0x0, 0x67, 0x0, 0x45, 0x0, 0x6e, 0x0, 0x63, 0x0, 0x72, 0x0, 0x79, 0x0, 0x70, 0x0, 0x74, 0x0, 0x69, 0x0, 0x6f, 0x0, 0x6e, 0x0, 0x44, 0x0, 0x61, 0x0, 0x74, 0x0, 0x61, 0x0, 0x53, 0x0, 0x70, 0x0, 0x61, 0x0, 0x63, 0x0, 0x65, 0x0}) == 0 {
 		if err = me.getStrongEncryptionDataSpace(); err != nil {
 			return
 		}
-		fmt.Printf("%#v\r\n", me.strongEncryptionDataSpace.TransformReferences[0].Data)
-		// The DataSpaceDefinition structure MUST have exactly one TransformReferences entry, which MUST be "StrongEncryptionTransform"
-		if string(me.strongEncryptionDataSpace.TransformReferences[0].Data) == string([]byte{0x53, 0x0, 0x74, 0x0, 0x72, 0x0, 0x6f, 0x0, 0x6e, 0x0, 0x67, 0x0, 0x45, 0x0, 0x6e, 0x0, 0x63, 0x0, 0x72, 0x0, 0x79, 0x0, 0x70, 0x0, 0x74, 0x0, 0x69, 0x0, 0x6f, 0x0, 0x6e, 0x0, 0x54, 0x0, 0x72, 0x0, 0x61, 0x0, 0x6e, 0x0, 0x73, 0x0, 0x66, 0x0, 0x6f, 0x0, 0x72, 0x0, 0x6d, 0x0}) {
 
-			fmt.Printf("%#v\r\n", me.dataSpaceMap)
+		// The DataSpaceDefinition structure MUST have exactly one TransformReferences entry, which MUST be "StrongEncryptionTransform"
+		if bytes.Compare(me.strongEncryptionDataSpace.TransformReferences[0].Data, []byte{0x53, 0x0, 0x74, 0x0, 0x72, 0x0, 0x6f, 0x0, 0x6e, 0x0, 0x67, 0x0, 0x45, 0x0, 0x6e, 0x0, 0x63, 0x0, 0x72, 0x0, 0x79, 0x0, 0x70, 0x0, 0x74, 0x0, 0x69, 0x0, 0x6f, 0x0, 0x6e, 0x0, 0x54, 0x0, 0x72, 0x0, 0x61, 0x0, 0x6e, 0x0, 0x73, 0x0, 0x66, 0x0, 0x6f, 0x0, 0x72, 0x0, 0x6d, 0x0}) == 0 {
+
+			// The "StrongEncryptionTransform" storage MUST contain a stream named "0x06Primary"
+			if err = me.get06Primary(); err != nil {
+				return
+			}
+
+			fmt.Printf("%#v\r\n", me.primary)
 			fmt.Println(string(me.dataSpaceMap.Map_Entries[0].DataSpaceName.Data))
 			fmt.Println(string(me.dataSpaceMap.Map_Entries[0].ReferenceComponents[0].ReferenceComponent.Data))
 
@@ -119,16 +175,83 @@ func (me *MyData) getDataSpaceMap() (err error) {
 
 	return nil
 }
-func (me *MyData) get06Primary() (err error) {
+func (me *myData) get06Primary() (err error) {
 	var b []byte
 	if b, err = me.cf.GetStream(string([]byte{6}) + `DataSpaces\TransformInfo\StrongEncryptionTransform\` + string([]byte{6}) + `Primary`); err != nil {
 		return
 	}
 
 	me.primary = new(IRMDSTransformInfo)
+	var startIndex int = 0
+	// 第1部分 TransformInfoHeader
+	if startIndex, err = me.primary.getTransformInfoHeader(b, startIndex); err != nil {
+		return
+	}
+	// 第2部分 TransformInfoHeader
+	if startIndex, err = me.primary.getExtensibilityHeader(b, startIndex); err != nil {
+		return
+	}
+	// 第3部分
+	if startIndex, err = readUTF_8_LP_P4(&me.primary.XrMLLicense, b, startIndex); err != nil {
+		return
+	}
+
+	return
 }
 
-func (me *MyData) getStrongEncryptionDataSpace() (err error) {
+// 第1部分 TransformInfoHeader
+func (me *IRMDSTransformInfo) getTransformInfoHeader(b []byte, startIndex int) (endIndex int, err error) {
+	me.TransformInfoHeader = TransformInfoHeader{}
+	// 读取Length
+	if me.TransformInfoHeader.TransformLength, err = byteToUint32(b[startIndex : startIndex+binary.Size(me.TransformInfoHeader.TransformLength)]); err != nil {
+		return
+	}
+	startIndex += binary.Size(me.TransformInfoHeader.TransformLength)
+	// 读取TransformType
+	if me.TransformInfoHeader.TransformType, err = byteToUint32(b[startIndex : startIndex+binary.Size(me.TransformInfoHeader.TransformType)]); err != nil {
+		return
+	}
+	startIndex += binary.Size(me.TransformInfoHeader.TransformType)
+	// 读取TransformID
+	if startIndex, err = readUNICODE_LP_P4(&me.TransformInfoHeader.TransformID, b, startIndex); err != nil {
+		return
+	}
+	// 读取TransformName
+	if startIndex, err = readUNICODE_LP_P4(&me.TransformInfoHeader.TransformName, b, startIndex); err != nil {
+		return
+	}
+	// 读取ReaderVersion
+	if startIndex, err = readVersion(&me.TransformInfoHeader.ReaderVersion, b, startIndex); err != nil {
+		return
+	}
+	// 读取UpdaterVersion
+	if startIndex, err = readVersion(&me.TransformInfoHeader.UpdaterVersion, b, startIndex); err != nil {
+		return
+	}
+	// 读取WriterVersion
+	if startIndex, err = readVersion(&me.TransformInfoHeader.WriterVersion, b, startIndex); err != nil {
+		return
+	}
+
+	return startIndex, nil
+}
+
+// 第2部分 ExtensibilityHeader
+func (me *IRMDSTransformInfo) getExtensibilityHeader(b []byte, startIndex int) (endIndex int, err error) {
+	me.ExtensibilityHeader = ExtensibilityHeader{}
+	// 读取Length
+	if me.ExtensibilityHeader.Length, err = byteToUint32(b[startIndex : startIndex+binary.Size(me.ExtensibilityHeader.Length)]); err != nil {
+		return
+	}
+	startIndex += binary.Size(me.ExtensibilityHeader.Length)
+	// It MUST be 0x00000004
+	if me.ExtensibilityHeader.Length != 4 {
+		return 0, errors.New("ExtensibilityHeader.Length MUST be 0x00000004")
+	}
+	return startIndex, nil
+}
+
+func (me *myData) getStrongEncryptionDataSpace() (err error) {
 	var b []byte
 	if b, err = me.cf.GetStream(string([]byte{6}) + `DataSpaces\DataSpaceInfo\StrongEncryptionDataSpace`); err != nil {
 		return
@@ -175,9 +298,22 @@ func readUNICODE_LP_P4(p *UNICODE_LP_P4, b []byte, startIndex int) (endIndex int
 	return startIndex, nil
 }
 
-func byteToUint32(src []byte) (x uint32, err error) {
-	if len(src) != 4 {
-		return 0, errors.New("转uint32必须是4个字节。")
+// 读取UTF_8_LP_P4结构
+func readUTF_8_LP_P4(p *UTF_8_LP_P4, b []byte, startIndex int) (endIndex int, err error) {
+	return readUNICODE_LP_P4(&p.UNICODE_LP_P4, b, startIndex)
+}
+
+// 读取Version结构
+func readVersion(p *Version, b []byte, startIndex int) (endIndex int, err error) {
+	if p.vMajor, err = byteToUint16(b[startIndex : startIndex+binary.Size(p.vMajor)]); err != nil {
+		return
 	}
-	return uint32(src[0]) + uint32(src[1]<<8) + uint32(src[2]<<16) + uint32(src[3]<<24), nil
+	startIndex += binary.Size(p.vMajor)
+
+	if p.vMinor, err = byteToUint16(b[startIndex : startIndex+binary.Size(p.vMinor)]); err != nil {
+		return
+	}
+	startIndex += binary.Size(p.vMinor)
+
+	return startIndex, nil
 }

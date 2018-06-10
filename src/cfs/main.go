@@ -1,3 +1,4 @@
+// compoundFileStruct
 package main
 
 import (
@@ -61,30 +62,32 @@ func handleCommands(tokens []string) {
 		if b, err := cf.GetStream(tokens[1]); err != nil {
 			fmt.Println(err)
 		} else {
+			var saveFile string
+			arr := strings.Split(tokens[1], `\`)
+			saveFile = arr[len(arr)-1]
+
 			if fileName == "Thumbs.db" {
-				tokens[1] = tokens[1] + `.jpg`
+				saveFile += `.jpg`
 				b = b[24:]
 			}
-			// 每一个缩略图IStream的前12个字节（3个整形）不是缩略图的内容，不能用的，因此在读取的时候跳过那三个字节好了
-			if err := ioutil.WriteFile(tokens[1], b, 0666); err != nil {
+			// 每一个缩略图IStream的前12个字节（3个整形）不是缩略图的内容
+			// 不能用的，因此在读取的时候跳过那三个字节好了
+			// 64位系统是24位？ 不确定
+			if err := ioutil.WriteFile(saveFile, b, 0666); err != nil {
 				fmt.Println(err)
 			}
 		}
-	case "saveall":
-		arr := cf.GetStreams()
+	case "rel":
+		var bOffset int = 0
+		var strExt string = ""
+
 		if fileName == "Thumbs.db" {
-			os.Mkdir("Thumbs", 0666)
+			bOffset = 24
+			strExt = ".jpg"
 		}
-
-		for i := range arr {
-			if fileName == "Thumbs.db" {
-				arr[i].Name = `Thumbs\` + arr[i].Name + `.jpg`
-				arr[i].B = arr[i].B[24:]
-			}
-
-			if err := ioutil.WriteFile(arr[i].Name, arr[i].B, 0666); err != nil {
-				fmt.Println(err)
-			}
+		if err := cf.Release(bOffset, strExt); err != nil {
+			fmt.Println(err)
+			return
 		}
 
 	default:
@@ -99,7 +102,7 @@ func printCmd() {
  Enter following commands to control:
  ls -- 查看文件列表
  show <name> -- 输出文件数据
- saveall -- 保存所有流
+ rel -- release释放所有流
  e或者q -- 退出 
  `)
 

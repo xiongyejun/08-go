@@ -130,50 +130,45 @@ type ViewerContentStream struct {
 	Contents []byte
 }
 
+//// 2.3.1
+//type EncryptionHeaderFlags struct {
+
+//}
 // 2.3.2
-type EncryptionHeader struct {
-	Flags     int32 // EncryptionHeaderFlags
-	SizeExtra int32 // MUST be 0x00000000
-	AlgID     int32
-	//	0x00000000	Determined by Flags
-	//	0x00006801	RC4
-	//	0x0000660E	128-bit AES
-	//	0x0000660F	192-bit AES
-	//	0x00006610	256-bit AES
+//type EncryptionHeader struct {
+//	Flags     int32 // EncryptionHeaderFlags
+//	SizeExtra int32 // MUST be 0x00000000
+//	AlgID     int32
+//	//	0x00000000	Determined by Flags
+//	//	0x00006801	RC4
+//	//	0x0000660E	128-bit AES
+//	//	0x0000660F	192-bit AES
+//	//	0x00006610	256-bit AES
 
-	//	Flags.fCryptoAPI	Flags.fAES	Flags.fExternal	AlgID		Algorithm
-	//	0					0			1				0x00000000	Determined by the application
-	//	1					0			0				0x00000000	RC4
-	//	1					0			0				0x00006801	RC4
-	//	1					1			0				0x00000000	128-bit AES
-	//	1					1			0				0x0000660E	128-bit AES
-	//	1					1			0				0x0000660F	192-bit AES
-	//	1					1			0				0x00006610	256-bit AES
-	AlgIDHash int32
-	//	AlgIDHash	Flags.fExternal	Algorithm
-	//	0x00000000				1	Determined by the application
-	//	0x00000000				0	SHA-1
-	//	0x00008004				0	SHA-1
-	KeySize uint32
-	//	Algorithm	Value									Comment
-	//	Any			0x00000000								Determined by Flags
-	//	RC4			0x00000028 – 0x00000080 (inclusive)		8-bit increments
-	//	AES			0x00000080, 0x000000C0, 0x00000100		128-bit, 192-bit, or 256-bit
-	ProviderType int32
+//	//	Flags.fCryptoAPI	Flags.fAES	Flags.fExternal	AlgID		Algorithm
+//	//	0					0			1				0x00000000	Determined by the application
+//	//	1					0			0				0x00000000	RC4
+//	//	1					0			0				0x00006801	RC4
+//	//	1					1			0				0x00000000	128-bit AES
+//	//	1					1			0				0x0000660E	128-bit AES
+//	//	1					1			0				0x0000660F	192-bit AES
+//	//	1					1			0				0x00006610	256-bit AES
+//	AlgIDHash int32
+//	//	AlgIDHash	Flags.fExternal	Algorithm
+//	//	0x00000000				1	Determined by the application
+//	//	0x00000000				0	SHA-1
+//	//	0x00008004				0	SHA-1
+//	KeySize uint32
+//	//	Algorithm	Value									Comment
+//	//	Any			0x00000000								Determined by Flags
+//	//	RC4			0x00000028 – 0x00000080 (inclusive)		8-bit increments
+//	//	AES			0x00000080, 0x000000C0, 0x00000100		128-bit, 192-bit, or 256-bit
+//	ProviderType int32
 
-	Reserved1 int32
-	Reserved2 int32
-	CSPName   string // (variable)
-}
-
-// 2.3.3
-type EncryptionVerifier struct {
-	SaltSize              uint32 // It MUST be 0x00000010
-	Salt                  [16]byte
-	EncryptedVerifier     [16]byte
-	VerifierHashSize      uint32
-	EncryptedVerifierHash []byte //  (variable) RC4-20个字节。AES-32个字节
-}
+//	Reserved1 int32
+//	Reserved2 int32
+//	CSPName   string // (variable)
+//}
 
 // 2.3.4.4
 type EncryptedPackage struct {
@@ -181,23 +176,9 @@ type EncryptedPackage struct {
 	EncryptedData []byte // (variable)
 }
 
-// 2.3.4.5
+// 2.3.4.5	2.3.4.6	2.3.4.10
 type EncryptionInfo struct {
 	EncryptionVersionInfo Version
-	EncryptionHeaderFlags int32
-	EncryptionHeaderSize  uint32
-	EncryptionHeader
-	//Field			Value
-	//Flags			The fCryptoAPI and fAES bits MUST be set. The fDocProps bit MUST be 0.
-	//SizeExtra		This value MUST be 0x00000000.
-	//AlgID			This value MUST be 0x0000660E (AES-128), 0x0000660F (AES-192), or 0x00006610 (AES-256).
-	//AlgIDHash		This value MUST be 0x00008004 (SHA-1).
-	//KeySize		This value MUST be 0x00000080 (AES-128), 0x000000C0 (AES-192), or 0x00000100 (AES-256).
-	//ProviderType	This value SHOULD<10> be 0x00000018 (AES).
-	//Reserved1		This value is undefined and MUST be ignored.
-	//Reserved2		This value MUST be 0x00000000 and MUST be ignored.
-	//CSPName		This value SHOULD<11> be set to either "Microsoft Enhanced RSA and AES Cryptographic Provider" or "Microsoft Enhanced RSA and AES Cryptographic Provider (Prototype)" as a null-terminated Unicode string.
-	EncryptionVerifier
 }
 
 type UNICODE_LP_P4 struct {
@@ -206,7 +187,8 @@ type UNICODE_LP_P4 struct {
 	Padding []byte // 结构体必须是4bytes的倍数，这个是填充
 }
 type UTF_8_LP_P4 struct {
-	Length  uint32 // 它必须是4字节的倍数。
-	Data    []byte
-	Padding []byte // 结构体必须是4bytes的倍数，这个是填充
+	UNICODE_LP_P4
+	//	Length  uint32 // 它必须是4字节的倍数。
+	//	Data    []byte
+	//	Padding []byte // 结构体必须是4bytes的倍数，这个是填充
 }

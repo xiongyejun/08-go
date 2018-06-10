@@ -3,6 +3,8 @@ package compoundFile
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"pkgMyPkg/colorPrint"
 	"strconv"
 	"strings"
@@ -70,22 +72,37 @@ func getPrintString(str string) string {
 	return strRet
 }
 
-type retStream struct {
-	B    []byte
-	Name string
+// 释放
+func (me *CompoundFile) Release(bOffset int, strExt string) (err error) {
+	if err = me.Root.release("", bOffset, strExt); err != nil {
+		return
+	}
+	return nil
 }
 
-// 保存所有的stream
-func (me *CompoundFile) GetStreams() (ret []retStream) {
-	ret = make([]retStream, len(me.cfs.arrStream))
-	var k int = 0
-	for i := range me.cfs.arrStream {
-		if me.cfs.arrStream[i].stream != nil {
-			ret[k].Name = me.cfs.arrStream[i].name
-			ret[k].B = me.cfs.arrStream[i].stream.Bytes()
-			k++
-		}
+// bOffset	字节的偏移
+// strExt	保存流的时候添加的后缀
+func (me *Storage) release(path string, bOffset int, strExt string) (err error) {
+	path += me.dir.name
+	path += `\`
 
+	if err = os.Mkdir(path, os.ModePerm); err != nil {
+		return
 	}
-	return ret[:k]
+
+	for i := range me.Streams {
+		if me.Streams[i].stream != nil {
+			if err = ioutil.WriteFile(path+getPrintString(me.Streams[i].name)+strExt, me.Streams[i].stream.Bytes()[bOffset:], os.ModePerm); err != nil {
+				return
+			}
+		}
+	}
+
+	for i := range me.Storages {
+		if err = me.Storages[i].release(path, bOffset, strExt); err != nil {
+			return
+		}
+	}
+
+	return nil
 }

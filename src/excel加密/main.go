@@ -5,11 +5,13 @@ import (
 )
 
 func main() {
-	d := new(MyData)
-
-	if err := d.Parse(`C:\Users\Administrator\Desktop\加密\密码1.xlsm`); err != nil {
+	if in, err := Parse(`C:\Users\Administrator\Desktop\加密\agile.xlsm`); err != nil {
 		fmt.Println(err)
 		return
+	} else {
+		if err := in.CheckPassword("1"); err != nil {
+			fmt.Println(err)
+		}
 	}
 
 }

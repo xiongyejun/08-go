@@ -1,11 +1,17 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
-	"path/filepath"
 )
 
 func main() {
-	fmt.Println(filepath.Dir(`C:\Users\Administrator\Desktop\vbaProject.bin`))
-	fmt.Println(filepath.Clean(`C:\Users\Administrator\Desktop\vbaProject.bin`))
+	str := "f7u+rzRljbybSV+jwnCDzg=="
+	if b, err := base64.StdEncoding.DecodeString(str); err != nil {
+		fmt.Println(b)
+	} else {
+		fmt.Println(b)
+		fmt.Printf("%s\r\n", b)
+	}
+
 }

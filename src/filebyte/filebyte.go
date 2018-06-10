@@ -67,6 +67,10 @@ func printOutPause(b []byte, p_iNo *int) {
 	fmt.Scan(&c)
 	cd.UnSetColor()
 	fmt.Print("\r\n")
+
+	if c == "e" || c == "q" {
+		os.Exit(1)
+	}
 }
 
 func printOut(b []byte, p_iNo *int) {
@@ -110,15 +114,15 @@ func printOut(b []byte, p_iNo *int) {
 func init() {
 	fb = new(filebyte)
 
-	fb.pause = flag.Bool("p", false, "打印完一段就pause")
+	fb.pause = flag.Bool("p", false, "直接打印完(pause的时候输入e或q直接退出)。")
 
 	flag.PrintDefaults()
 	flag.Parse()
 
 	if *fb.pause {
-		fb.f = printOutPause
-	} else {
 		fb.f = printOut
+	} else {
+		fb.f = printOutPause
 	}
 	cd = colorPrint.NewColorDll()
 }
