@@ -9,8 +9,10 @@ func main() {
 		fmt.Println(err)
 		return
 	} else {
-		if err := in.CheckPassword("1"); err != nil {
+		if err := in.CheckPassword("12"); err != nil {
 			fmt.Println(err)
+		} else {
+			fmt.Println("密码正确。")
 		}
 	}
 

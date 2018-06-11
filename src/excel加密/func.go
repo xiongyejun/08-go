@@ -26,12 +26,12 @@ func uintToByte(i uint) []byte {
 	return buf.Bytes()
 }
 
-func append36(src []byte, iSize int) []byte {
+func appendByte(src []byte, iSize int, bb byte) []byte {
 	if len(src) < iSize {
 		// padded by appending bytes with a value of 0x36
 		var b []byte = make([]byte, iSize-len(src))
 		for j := range b {
-			b[j] = 0x36
+			b[j] = bb
 		}
 		src = append(src, b...)
 	} else {

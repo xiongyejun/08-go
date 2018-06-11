@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/sha512"
 	"encoding/base64"
 	"encoding/xml"
@@ -116,15 +117,10 @@ func (me *agile) initData() (err error) {
 			return
 		}
 
-		fmt.Println(me.E.KE.KES[0].EK.EncryptedVerifierHashInput)
 		if me.EncryptedVerifier, err = base64.StdEncoding.DecodeString(me.E.KE.KES[0].EK.EncryptedVerifierHashInput); err != nil {
 			return
 		}
 		if me.EncryptedVerifierHash, err = base64.StdEncoding.DecodeString(me.E.KE.KES[0].EK.EncryptedVerifierHashValue); err != nil {
-			return
-		}
-
-		if me.Salt, err = base64.StdEncoding.DecodeString(me.E.KE.KES[0].EK.SaltValue); err != nil {
 			return
 		}
 
@@ -143,8 +139,6 @@ func (me *agile) getEncryptionKey(pwd []byte) (err error) {
 	if me.encryptionKey, err = H(me.sha, me.Salt, pwd); err != nil {
 		return
 	}
-	fmt.Printf("HashedSaltAndPassword=% x\r\n", me.encryptionKey)
-
 	var i uint = 0
 	for ; i < me.E.KE.KES[0].EK.SpinCount; i++ {
 		// Hn = H(iterator + Hn-1)
@@ -153,35 +147,116 @@ func (me *agile) getEncryptionKey(pwd []byte) (err error) {
 			return
 		}
 	}
-	fmt.Printf("FinalHashValue=% x\r\n", me.encryptionKey)
-	// Hfinal = H(Hn + blockKey)
-	me.blockKey = make([]byte, me.E.KE.KES[0].EK.BlockSize)
-	if me.encryptionKey, err = H(me.sha, me.encryptionKey, me.blockKey); err != nil {
-		return
-	}
-	fmt.Printf("BlockSize FinalHashValue=% x\r\n", me.encryptionKey)
+	//	// Hfinal = H(Hn + blockKey)
+	//	if me.encryptionKey, err = H(me.sha, me.encryptionKey, me.blockKey); err != nil {
+	//		return
+	//	}
+	//	fmt.Printf("BlockSize FinalHashValue=% x\r\n", me.encryptionKey)
 
 	// padded by appending bytes with a value of 0x36
-	me.encryptionKey = append36(me.encryptionKey, int(me.E.KE.KES[0].EK.KeyBits/8))
+	//	me.encryptionKey = append36(me.encryptionKey, int(me.E.KE.KES[0].EK.KeyBits))
+	//	fmt.Printf("append36 FinalHashValue=% x\r\n", me.encryptionKey)
 
 	//	fmt.Printf("% x\r\n", me.encryptionKey)
 	//	fmt.Printf("%s\r\n", me.encryptionKey)
+
 	return nil
 }
 
-// 2.3.4.12	Initialization Vector Generation初始化向量生成
-func (me *agile) getIV() (err error) {
-	if me.blockKey == nil {
-		me.iv = me.keySalt
+//// 2.3.4.13
+//func (me *agile) createVerifier() (err error) {
+//	hashInputBlockKey := []byte{0xfe, 0xa7, 0xd2, 0x76, 0x3b, 0x4b, 0x9e, 0x79}
+//	if me.encryptionKey, err = H(me.sha, me.encryptionKey, hashInputBlockKey); err != nil {
+//		return
+//	}
+//	fmt.Printf("KeyBits%d\r\n", int(me.E.KE.KES[0].EK.KeyBits))
+//	secretKey := appendByte(me.encryptionKey, int(me.E.KE.KES[0].EK.KeyBits/8), 0x36)
+//	fmt.Printf("secretKey= % x\r\n", secretKey)
+
+//	iv := appendByte(me.Salt, int(me.E.KE.KES[0].EK.BlockSize), 0x36)
+//	fmt.Printf("iv= % x\r\n", iv)
+
+//	if me.encryptionKey, err = aesDecrypt(me.EncryptedVerifier, secretKey, iv); err != nil {
+//		return
+//	}
+//	fmt.Printf("aesDecrypt me.encryptionKey= % x\r\n", me.encryptionKey)
+
+//	var tmp int = 0
+//	if me.E.KE.KES[0].EK.BlockSize > me.E.KE.KES[0].EK.HashSize {
+//		tmp = int(me.E.KE.KES[0].EK.BlockSize)
+//	} else {
+//		tmp = int(me.E.KE.KES[0].EK.HashSize)
+//	}
+//	var encryptedHashValue []byte
+//	if encryptedHashValue, err = H(me.sha, me.encryptionKey, nil); err != nil {
+//		return
+//	}
+//	encryptedHashValue = appendByte(encryptedHashValue, tmp, 0)
+//	fmt.Printf("encryptedHashValue= % x\r\n", encryptedHashValue)
+
+//	//	hashValueBlockKey := []byte{0xd7, 0xaa, 0x0f, 0x6d, 0x30, 0x61, 0x34, 0x4e}
+
+//	//	secretKeyBlockKey := []byte{0x14, 0x6e, 0x0b, 0xe7, 0xab, 0xac, 0xd0, 0xd6}
+
+//	return nil
+//}
+
+// 2.3.4.13
+func (me *agile) createVerifier() (encryptedValue []byte, err error) {
+	hashInputBlockKey := []byte{0xfe, 0xa7, 0xd2, 0x76, 0x3b, 0x4b, 0x9e, 0x79}
+	// 解密EncryptedVerifier
+	var plaintextEncryptedVerifier []byte
+	if plaintextEncryptedVerifier, err = me.cryptor(hashInputBlockKey, me.EncryptedVerifier, false); err != nil {
+		return
+	}
+
+	// 获取加密的encryptedHashValue
+	var tmp int = 0
+	if me.E.KE.KES[0].EK.BlockSize > me.E.KE.KES[0].EK.HashSize {
+		tmp = int(me.E.KE.KES[0].EK.BlockSize)
 	} else {
-		if me.iv, err = H(me.sha, me.keySalt, me.blockKey); err != nil {
+		tmp = int(me.E.KE.KES[0].EK.HashSize)
+	}
+	var encryptedHashValue []byte
+	if encryptedHashValue, err = H(me.sha, plaintextEncryptedVerifier, nil); err != nil {
+		return
+	}
+	encryptedHashValue = appendByte(encryptedHashValue, tmp, 0)
+	// 加密encryptedHashValue
+	hashValueBlockKey := []byte{0xd7, 0xaa, 0x0f, 0x6d, 0x30, 0x61, 0x34, 0x4e}
+	if encryptedValue, err = me.cryptor(hashValueBlockKey, encryptedHashValue, true); err != nil {
+		return
+	}
+	//	secretKeyBlockKey := []byte{0x14, 0x6e, 0x0b, 0xe7, 0xab, 0xac, 0xd0, 0xd6}
+
+	return
+}
+
+// bEncryption	true	加密
+// bEncryption	true	解密
+func (me *agile) cryptor(blockKey, valueInput []byte, bEncryption bool) (bResult []byte, err error) {
+	// 先用密码最后的hash值encryptionKey，与blockKey进行hash
+	if bResult, err = H(me.sha, me.encryptionKey, blockKey); err != nil {
+		return
+	}
+	// 得到密key
+	secretKey := appendByte(bResult, int(me.E.KE.KES[0].EK.KeyBits/8), 0x36)
+	// 得到密iv
+	iv := appendByte(me.Salt, int(me.E.KE.KES[0].EK.BlockSize), 0x36)
+
+	if bEncryption {
+		// 加密
+		if bResult, err = aesEncrypt(valueInput, secretKey, iv); err != nil {
 			return
 		}
-		// less than the value of the blockSize attribute corresponding 相应的to the cipherAlgorithm attribute, pad 垫the array of bytes by appending 0x36 until the array is blockSize bytes.
-		me.iv = append36(me.iv, int(me.E.KE.KES[0].EK.BlockSize))
-
+	} else {
+		// 解密
+		if bResult, err = aesDecrypt(valueInput, secretKey, iv); err != nil {
+			return
+		}
 	}
-	return nil
+
+	return
 }
 
 // 解析xml
@@ -198,5 +273,13 @@ func (me *agile) parseXml() (err error) {
 }
 
 func (me *agile) passwordVerifier() (err error) {
-	return me.evPasswordVerifier(me.encryptionKey, me.sha)
+	var encryptedHashValueNew []byte
+	if encryptedHashValueNew, err = me.createVerifier(); err != nil {
+		return
+	}
+	if bytes.Compare(encryptedHashValueNew, me.EncryptedVerifierHash) != 0 {
+		return errors.New("密码错误。")
+	}
+
+	return nil
 }
