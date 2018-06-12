@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"errors"
 	"fmt"
 	"hash"
+	"pkgMyPkg/aesECB"
 	"strconv"
 )
 
@@ -20,7 +22,7 @@ type rc4 struct {
 func (me *rc4) CheckPassword(password string) (err error) {
 	fmt.Println(password)
 	// 生成加密密钥
-	if err = me.getEncryptionKey([]byte(password)); err != nil {
+	if err = me.getEncryptionKey(string2Unicode(password)); err != nil {
 		return
 	}
 	// 验证密码
@@ -30,10 +32,10 @@ func (me *rc4) CheckPassword(password string) (err error) {
 // 2.3.4.5
 func (me *rc4) initData() (err error) {
 	var startIndex int = 4 // versio大小是4，前面已经判断过来
-	var encryptionHeaderFlags uint32
-	if encryptionHeaderFlags, err = byteToUint32(me.b[startIndex : startIndex+4]); err != nil {
-		return
-	}
+	//	var encryptionHeaderFlags uint32
+	//	if encryptionHeaderFlags, err = byteToUint32(me.b[startIndex : startIndex+4]); err != nil {
+	//		return
+	//	}
 	startIndex += 4
 
 	var encryptionHeaderSize uint32
@@ -51,6 +53,9 @@ func (me *rc4) initData() (err error) {
 	if algID, err = byteToUint32(me.b[startIndex : startIndex+4]); err != nil {
 		return
 	}
+	if algID != 0x0000660E && algID != 0x0000660E && algID != 0x0000660E {
+		return errors.New("AlgID	This value MUST be 0x0000660E (AES-128), 0x0000660F (AES-192), or 0x00006610 (AES-256).")
+	}
 	startIndex += 4
 	//AlgIDHash	This value MUST be 0x00008004 (SHA-1).
 	var algIDHash uint32
@@ -60,6 +65,7 @@ func (me *rc4) initData() (err error) {
 	if algIDHash != 0x00008004 {
 		return errors.New("AlgIDHash=" + strconv.Itoa(int(algIDHash)) + ", This value MUST be 0x00008004 (SHA-1).")
 	}
+	me.sha = sha1.New()
 	startIndex += 4
 	//KeySize	This value MUST be 0x00000080 (AES-128), 0x000000C0 (AES-192), or 0x00000100 (AES-256).
 	var keySize uint32
@@ -83,23 +89,21 @@ func (me *rc4) initData() (err error) {
 	startIndex += 4
 	//CSPName	This value SHOULD<11> be set to either "Microsoft Enhanced RSA and AES Cryptographic Provider" or "Microsoft Enhanced RSA and AES Cryptographic Provider (Prototype)" as a null-terminated Unicode string.
 	encryptionHeaderSize -= 4 * 8 // 剩余的长度是cspName
-	cspName := string(me.b[startIndex : startIndex+int(encryptionHeaderSize)])
+	//	cspName := me.b[startIndex : startIndex+int(encryptionHeaderSize)]
 	startIndex += int(encryptionHeaderSize)
 
-	fmt.Printf("encryptionHeaderFlags=%d, algID=%d, keySize=%d, cspName=%s\r\n", encryptionHeaderFlags, algID, keySize, cspName)
+	// fmt.Printf("encryptionHeaderFlags=%d, algID=%d, keySize=%d, cspName=% x\r\n", encryptionHeaderFlags, algID, keySize, cspName)
+
 	// 接下来是EncryptionVerifier
 	if startIndex, err = me.EncryptionVerifier.getEncryptionVerifier(me.b, startIndex, providerType); err != nil {
 		return
 	}
-	fmt.Printf("%#v\r\n", me.EncryptionVerifier)
 
 	return nil
 }
 
 // 2.3.4.7
 func (me *rc4) getEncryptionKey(pwd []byte) (err error) {
-	me.sha = sha1.New()
-
 	if me.encryptionKey, err = H(me.sha, me.Salt, pwd); err != nil {
 		return
 	}
@@ -112,8 +116,9 @@ func (me *rc4) getEncryptionKey(pwd []byte) (err error) {
 			return
 		}
 	}
+	fmt.Printf("Hfinal me.encryptionKey len=% x\r\n", len(me.encryptionKey))
 	// Hfinal = H(Hn + block)
-	if me.encryptionKey, err = H(me.sha, me.encryptionKey, []byte{0}); err != nil {
+	if me.encryptionKey, err = H(me.sha, me.encryptionKey, []byte{0, 0, 0, 0}); err != nil {
 		return
 	}
 
@@ -132,12 +137,18 @@ func (me *rc4) getEncryptionKey(pwd []byte) (err error) {
 	return nil
 }
 
+// 2.3.4.7
 func (me *rc4) deriveKey() (err error) {
-	key := make([]byte, 64)
-	for i := range me.encryptionKey {
-		key[i] = me.EncryptedVerifier[i] ^ 0x36
+	n := len(me.encryptionKey)
+	if n > 64 {
+		n = 64
 	}
-	for i := len(me.encryptionKey); i < 64; i++ {
+	fmt.Printf("N=%d\r\n", n)
+	key := make([]byte, 64)
+	for i := 0; i < n; i++ {
+		key[i] = me.encryptionKey[i] ^ 0x36
+	}
+	for i := n; i < 64; i++ {
 		key[i] = 0x36
 	}
 
@@ -151,12 +162,17 @@ func (me *rc4) deriveKey() (err error) {
 		return
 	}
 
+	n = len(me.encryptionKey)
+	if n > 64 {
+		n = 64
+	}
 	for i := range me.encryptionKey {
-		key[i] = me.EncryptedVerifier[i] ^ 0x5C
+		key[i] = me.encryptionKey[i] ^ 0x5C
 	}
 	for i := len(me.encryptionKey); i < 64; i++ {
 		key[i] = 0x5C
 	}
+
 	if _, err = me.sha.Write(key); err != nil {
 		return err
 	}
@@ -169,5 +185,31 @@ func (me *rc4) deriveKey() (err error) {
 
 // 密码验证
 func (me *rc4) passwordVerifier() (err error) {
-	return me.evPasswordVerifier(me.encryptionKey, me.sha)
+	ecb := aesECB.NewAesTool(me.encryptionKey, me.keySize/8)
+
+	// Decrypt the encrypted verifier 解密加密验证器
+	var decryptedVerifier []byte
+	if decryptedVerifier, err = ecb.Decrypt(me.EncryptedVerifier); err != nil {
+		return errors.New("decryptedVerifier:" + err.Error())
+	}
+	decryptedVerifier = decryptedVerifier[:16]
+
+	var decryptedVerifierHash []byte
+	if decryptedVerifierHash, err = ecb.Decrypt(me.EncryptedVerifierHash); err != nil {
+		return errors.New("decryptedVerifierHash:" + err.Error())
+	}
+	decryptedVerifierHash = decryptedVerifierHash[:20]
+	fmt.Printf("decryptedVerifierHash=\r\n% x, len=%d\r\n", decryptedVerifierHash, len(decryptedVerifierHash))
+	// Hash the decrypted verifier (2.3.4.9)
+	if _, err = me.sha.Write(decryptedVerifier); err != nil {
+		return errors.New("sha.Write:" + err.Error())
+	}
+	checkHash := me.sha.Sum(nil)
+	fmt.Printf("checkHash=\r\n% x, len=%d\r\n", checkHash, len(checkHash))
+
+	if bytes.Compare(checkHash, decryptedVerifierHash) != 0 {
+		return errors.New("密码不正确。")
+	}
+
+	return nil
 }

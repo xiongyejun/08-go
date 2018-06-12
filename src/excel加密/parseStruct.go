@@ -56,6 +56,7 @@ func (me *myData) getEncryptionInfo() (iEncryptedType IEncryptedType, err error)
 	if b, err = me.cf.GetStream(`EncryptionInfo`); err != nil {
 		return
 	}
+	me.cf = nil
 
 	me.encryptionInfo = new(EncryptionInfo)
 
@@ -66,7 +67,7 @@ func (me *myData) getEncryptionInfo() (iEncryptedType IEncryptedType, err error)
 	if me.encryptionInfo.EncryptionVersionInfo.vMajor == 0x0004 &&
 		me.encryptionInfo.EncryptionVersionInfo.vMinor == 0x0004 {
 		// Agile敏捷 Encryption
-		fmt.Println("Agile敏捷 Encryption")
+		fmt.Println("Agile Encryption")
 		agl := &agile{}
 		agl.b = b
 		return agl, nil
@@ -77,12 +78,17 @@ func (me *myData) getEncryptionInfo() (iEncryptedType IEncryptedType, err error)
 		me.encryptionInfo.EncryptionVersionInfo.vMinor == 0x0002 {
 		// Standard Encryption
 		fmt.Println("Standard Encryption")
+		r := &rc4{}
+		r.b = b
+		return r, nil
 
 	} else if (me.encryptionInfo.EncryptionVersionInfo.vMajor == 0x0003 ||
 		me.encryptionInfo.EncryptionVersionInfo.vMajor == 0x0004) &&
 		me.encryptionInfo.EncryptionVersionInfo.vMinor == 0x0003 {
 		// Extensible Encryption
 		fmt.Println("Extensible Encryption")
+	} else {
+		return nil, errors.New("未知加密类型。")
 	}
 
 	return nil, nil

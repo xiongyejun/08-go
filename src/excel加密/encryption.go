@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"errors"
 	"fmt"
 	"hash"
 )
@@ -34,6 +35,9 @@ func (me *EncryptionVerifier) getEncryptionVerifier(src []byte, index int, provi
 		return
 	}
 	index += 4
+	if me.SaltSize != 0x10 {
+		return 0, errors.New("me.SaltSize必须等于0x10.")
+	}
 
 	me.Salt = src[index : index+int(me.SaltSize)]
 	index += int(me.SaltSize)
@@ -65,33 +69,6 @@ func (me *EncryptionVerifier) getEncryptionVerifier(src []byte, index int, provi
 	return index, nil
 }
 
-// 密码验证
-func (me *EncryptionVerifier) evPasswordVerifier(encryptionKey []byte, sha hash.Hash) (err error) {
-	//	fmt.Println("len=", len(encryptionKey))
-	//	// Decrypt the encrypted verifier 解密加密验证器
-	//	var decryptedVerifier []byte
-	//	if decryptedVerifier, err = aesDecrypt(me.EncryptedVerifier, encryptionKey); err != nil {
-	//		return errors.New("decryptedVerifier:" + err.Error())
-	//	}
-	//	decryptedVerifier = decryptedVerifier[:16]
-
-	//	var decryptedVerifierHash []byte
-	//	if decryptedVerifierHash, err = aesDecrypt(me.EncryptedVerifierHash, encryptionKey); err != nil {
-	//		return errors.New("decryptedVerifierHash:" + err.Error())
-	//	}
-	//	// Hash the decrypted verifier (2.3.4.9)
-	//	if _, err = sha.Write(decryptedVerifier); err != nil {
-	//		return errors.New("sha.Write:" + err.Error())
-	//	}
-	//	checkHash := sha.Sum(nil)
-
-	//	if bytes.Compare(checkHash, decryptedVerifierHash) != 0 {
-	//		return errors.New("密码不正确。")
-	//	}
-
-	//	fmt.Println("test")
-	return nil
-}
 func aesEncrypt(src, key, IV []byte) ([]byte, error) {
 	if block, err := aes.NewCipher(key); err != nil {
 		return nil, err
@@ -108,6 +85,7 @@ func aesDecrypt(crypted, key, IV []byte) (b []byte, err error) {
 		return nil, err
 	} else {
 		blockMode := cipher.NewCBCDecrypter(block, IV)
+
 		src := make([]byte, len(crypted))
 		blockMode.CryptBlocks(src, crypted)
 		//		src = pkcs5UnPadding(src)
