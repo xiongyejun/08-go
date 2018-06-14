@@ -4,7 +4,6 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"errors"
-	"fmt"
 	"hash"
 )
 
@@ -96,14 +95,15 @@ func pkcs5UnPadding(src []byte) []byte {
 	length := len(src)
 	unpadding := int(src[length-1])
 
-	fmt.Printf("src=% x\r\n", src)
-	fmt.Printf("length=%d, unpadding=%d\r\n", length, unpadding)
 	return src[:(length - unpadding)]
 }
 
 func H(sha hash.Hash, b1, b2 []byte) (b []byte, err error) {
 	sha.Reset()
-	b = append(b1, b2...)
+	//	不用 b = append(b1,b2)，防止b1地址的内容被修改
+	b = make([]byte, len(b1)+len(b2))
+	copy(b, b1)
+	copy(b[len(b1):], b2)
 	if _, err := sha.Write(b); err != nil {
 		return nil, err
 	}

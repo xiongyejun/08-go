@@ -20,11 +20,13 @@ type rc4 struct {
 }
 
 func (me *rc4) CheckPassword(password string) (err error) {
-	fmt.Println(password)
+	fmt.Println("password=", password)
+
 	// 生成加密密钥
 	if err = me.getEncryptionKey(string2Unicode(password)); err != nil {
 		return
 	}
+
 	// 验证密码
 	return me.passwordVerifier()
 }
@@ -107,7 +109,6 @@ func (me *rc4) getEncryptionKey(pwd []byte) (err error) {
 	if me.encryptionKey, err = H(me.sha, me.Salt, pwd); err != nil {
 		return
 	}
-
 	var i uint = 0
 	for ; i < 50000; i++ {
 		// Hn = H(iterator + Hn-1)
@@ -116,7 +117,6 @@ func (me *rc4) getEncryptionKey(pwd []byte) (err error) {
 			return
 		}
 	}
-	fmt.Printf("Hfinal me.encryptionKey len=% x\r\n", len(me.encryptionKey))
 	// Hfinal = H(Hn + block)
 	if me.encryptionKey, err = H(me.sha, me.encryptionKey, []byte{0, 0, 0, 0}); err != nil {
 		return
@@ -143,7 +143,7 @@ func (me *rc4) deriveKey() (err error) {
 	if n > 64 {
 		n = 64
 	}
-	fmt.Printf("N=%d\r\n", n)
+
 	key := make([]byte, 64)
 	for i := 0; i < n; i++ {
 		key[i] = me.encryptionKey[i] ^ 0x36
@@ -152,6 +152,7 @@ func (me *rc4) deriveKey() (err error) {
 		key[i] = 0x36
 	}
 
+	me.sha.Reset()
 	if _, err = me.sha.Write(key); err != nil {
 		return err
 	}
@@ -173,6 +174,7 @@ func (me *rc4) deriveKey() (err error) {
 		key[i] = 0x5C
 	}
 
+	me.sha.Reset()
 	if _, err = me.sha.Write(key); err != nil {
 		return err
 	}
@@ -199,13 +201,12 @@ func (me *rc4) passwordVerifier() (err error) {
 		return errors.New("decryptedVerifierHash:" + err.Error())
 	}
 	decryptedVerifierHash = decryptedVerifierHash[:20]
-	fmt.Printf("decryptedVerifierHash=\r\n% x, len=%d\r\n", decryptedVerifierHash, len(decryptedVerifierHash))
 	// Hash the decrypted verifier (2.3.4.9)
+	me.sha.Reset()
 	if _, err = me.sha.Write(decryptedVerifier); err != nil {
 		return errors.New("sha.Write:" + err.Error())
 	}
 	checkHash := me.sha.Sum(nil)
-	fmt.Printf("checkHash=\r\n% x, len=%d\r\n", checkHash, len(checkHash))
 
 	if bytes.Compare(checkHash, decryptedVerifierHash) != 0 {
 		return errors.New("密码不正确。")
