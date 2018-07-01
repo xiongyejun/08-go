@@ -51,6 +51,7 @@ func Parse(fileName string) (iEncryptedType IEncryptedType, err error) {
 }
 
 // 读取EncryptionInfo -- 用来判断使用的是哪种加密方式
+// 这个是ECMA-376（也就是zip文档加密后形成的复合文档，里面有EncryptionInfo流）的加密
 func (me *myData) getEncryptionInfo() (iEncryptedType IEncryptedType, err error) {
 	var b []byte
 	if b, err = me.cf.GetStream(`EncryptionInfo`); err != nil {
@@ -67,7 +68,7 @@ func (me *myData) getEncryptionInfo() (iEncryptedType IEncryptedType, err error)
 	if me.encryptionInfo.EncryptionVersionInfo.vMajor == 0x0004 &&
 		me.encryptionInfo.EncryptionVersionInfo.vMinor == 0x0004 {
 		// Agile敏捷 Encryption
-		fmt.Println("Agile Encryption")
+		fmt.Println("ECMA-376 Agile Encryption")
 		agl := &agile{}
 		agl.b = b
 		return agl, nil
@@ -77,7 +78,7 @@ func (me *myData) getEncryptionInfo() (iEncryptedType IEncryptedType, err error)
 		me.encryptionInfo.EncryptionVersionInfo.vMajor == 0x0004) &&
 		me.encryptionInfo.EncryptionVersionInfo.vMinor == 0x0002 {
 		// Standard Encryption
-		fmt.Println("Standard Encryption")
+		fmt.Println("ECMA-376 Encryption")
 		r := &rc4{}
 		r.b = b
 		return r, nil
@@ -87,6 +88,7 @@ func (me *myData) getEncryptionInfo() (iEncryptedType IEncryptedType, err error)
 		me.encryptionInfo.EncryptionVersionInfo.vMinor == 0x0003 {
 		// Extensible Encryption
 		fmt.Println("Extensible Encryption")
+		return nil, errors.New("未实现的加密类型。")
 	} else {
 		return nil, errors.New("未知加密类型。")
 	}

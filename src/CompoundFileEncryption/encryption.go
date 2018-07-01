@@ -7,6 +7,7 @@ import (
 	"hash"
 )
 
+// 1.3.3加密方式
 type EncryptedType int
 
 const (

@@ -209,7 +209,7 @@ func (me *rc4) passwordVerifier() (err error) {
 	checkHash := me.sha.Sum(nil)
 
 	if bytes.Compare(checkHash, decryptedVerifierHash) != 0 {
-		return errors.New("密码不正确。")
+		return errors.New("密码错误。")
 	}
 
 	return nil

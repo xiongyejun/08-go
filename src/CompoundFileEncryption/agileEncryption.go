@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"crypto/sha512"
 	"encoding/base64"
 	"encoding/xml"
@@ -113,6 +114,8 @@ func (me *agile) initData() (err error) {
 
 		if me.E.KE.KES[0].EK.HashAlgorithm == "SHA512" {
 			me.sha = sha512.New()
+		} else if me.E.KE.KES[0].EK.HashAlgorithm == "SHA1" {
+			me.sha = sha1.New()
 		} else {
 			return errors.New("未设置的HashAlgorithm：" + me.E.KE.KES[0].EK.HashAlgorithm)
 		}
@@ -150,16 +153,16 @@ func (me *agile) createVerifier() (encryptedValue []byte, err error) {
 
 	// 获取加密的encryptedHashValue
 	var tmp int = 0
-	if me.E.KE.KES[0].EK.BlockSize > me.E.KE.KES[0].EK.HashSize {
-		tmp = int(me.E.KE.KES[0].EK.BlockSize)
-	} else {
-		tmp = int(me.E.KE.KES[0].EK.HashSize)
-	}
+	tmp1 := int(me.E.KE.KES[0].EK.HashSize)
+	tmp2 := int(me.E.KE.KES[0].EK.BlockSize)
+	tmp = ((tmp1 + tmp2 - 1) / tmp2) * tmp2
+
 	var encryptedHashValue []byte
 	if encryptedHashValue, err = H(me.sha, plaintextEncryptedVerifier, nil); err != nil {
 		return
 	}
 	encryptedHashValue = appendByte(encryptedHashValue, tmp, 0)
+
 	// 加密encryptedHashValue
 	hashValueBlockKey := []byte{0xd7, 0xaa, 0x0f, 0x6d, 0x30, 0x61, 0x34, 0x4e}
 	if encryptedValue, err = me.cryptor(hashValueBlockKey, encryptedHashValue, true); err != nil {
@@ -215,6 +218,7 @@ func (me *agile) passwordVerifier() (err error) {
 	if encryptedHashValueNew, err = me.createVerifier(); err != nil {
 		return
 	}
+
 	if bytes.Compare(encryptedHashValueNew, me.EncryptedVerifierHash) != 0 {
 		return errors.New("密码错误。")
 	}

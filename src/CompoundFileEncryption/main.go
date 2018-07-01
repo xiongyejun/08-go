@@ -1,3 +1,5 @@
+// Compound File Encryption
+
 package main
 
 import (
@@ -7,7 +9,7 @@ import (
 
 func main() {
 	if len(os.Args) != 3 {
-		fmt.Println("第1个参数filename，第2个参数Password")
+		fmt.Println("CompoundFileEncryption <FileName> <Password>")
 		return
 	}
 
