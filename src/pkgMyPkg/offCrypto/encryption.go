@@ -75,6 +75,7 @@ func aesEncrypt(src, key, IV []byte) ([]byte, error) {
 		return crypted, nil
 	}
 }
+
 func aesDecrypt(crypted, key, IV []byte) (b []byte, err error) {
 	if block, err := aes.NewCipher(key); err != nil {
 		return nil, err
@@ -87,6 +88,7 @@ func aesDecrypt(crypted, key, IV []byte) (b []byte, err error) {
 		return src, nil
 	}
 }
+
 func pkcs5UnPadding(src []byte) []byte {
 	length := len(src)
 	unpadding := int(src[length-1])

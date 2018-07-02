@@ -55,6 +55,7 @@ type KeyEncryptor struct {
 	URI     string        `xml:"uri,attr"`
 	EK      *EncryptedKey `xml:"encryptedKey"`
 }
+
 type KeyEncryptors struct {
 	KES []*KeyEncryptor `xml:"keyEncryptor"`
 }

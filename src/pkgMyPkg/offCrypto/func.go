@@ -12,6 +12,7 @@ func byteToUint32(src []byte) (x uint32, err error) {
 	}
 	return uint32(src[0]) | uint32(src[1])<<8 | uint32(src[2])<<16 | uint32(src[3])<<24, nil
 }
+
 func byteToUint16(src []byte) (x uint16, err error) {
 	if len(src) != 2 {
 		return 0, errors.New("转uint32必须是2个字节。")

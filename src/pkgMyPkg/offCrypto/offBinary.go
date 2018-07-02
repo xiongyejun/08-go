@@ -6,7 +6,7 @@ import (
 	"crypto/rc4"
 	"crypto/sha1"
 	"errors"
-	"fmt"
+	"hash"
 	"strconv"
 )
 
@@ -116,9 +116,9 @@ func (me *rc4CryptoAPI) getEncryptionKey(pwd []byte) (err error) {
 		return
 	}
 
-	fmt.Printf("keysize=%d\r\n", me.keySize)
-	if len(me.encryptionKey) > me.keySize {
-		me.encryptionKey = me.encryptionKey[:me.keySize]
+	var keySize int = me.keySize / 8
+	if len(me.encryptionKey) > keySize {
+		me.encryptionKey = me.encryptionKey[:keySize]
 	} else {
 		for i := me.keySize; i < len(me.encryptionKey); i++ {
 			me.encryptionKey = append(me.encryptionKey, 0)
@@ -130,35 +130,7 @@ func (me *rc4CryptoAPI) getEncryptionKey(pwd []byte) (err error) {
 
 // 密码验证
 func (me *rc4CryptoAPI) passwordVerifier() (err error) {
-	// Decrypt the encrypted verifier 解密加密验证器
-	var decryptedVerifier []byte
-	fmt.Printf("EncryptedVerifier=\r\n% x\r\n", me.EncryptedVerifier)
-	if decryptedVerifier, err = rc4EncryptDecrypt(me.EncryptedVerifier, me.encryptionKey); err != nil {
-		return errors.New("decryptedVerifier:" + err.Error())
-	}
-	decryptedVerifier = decryptedVerifier[:16]
-	fmt.Printf("decryptedVerifier=\r\n% x\r\n", decryptedVerifier)
-
-	var decryptedVerifierHash []byte
-	fmt.Printf("EncryptedVerifierHash=\r\n% x\r\n", me.EncryptedVerifierHash)
-	if decryptedVerifierHash, err = rc4EncryptDecrypt(me.EncryptedVerifierHash, me.encryptionKey); err != nil {
-		return errors.New("decryptedVerifierHash:" + err.Error())
-	}
-	decryptedVerifierHash = decryptedVerifierHash[:20]
-	fmt.Printf("decryptedVerifierHash=\r\n% x\r\n", decryptedVerifierHash)
-	// 4.	Calculate the SHA-1 hash value of the Verifier value calculated in step 2.
-	me.sha.Reset()
-	if _, err = me.sha.Write(decryptedVerifier); err != nil {
-		return errors.New("sha.Write:" + err.Error())
-	}
-	checkHash := me.sha.Sum(nil)
-	fmt.Printf("checkHash=\r\n% x\r\n", checkHash)
-
-	if bytes.Compare(checkHash, decryptedVerifierHash) != 0 {
-		return errors.New("密码错误。")
-	}
-
-	return nil
+	return passwordVerifier(me.encryptionKey, me.EncryptedVerifier, me.EncryptedVerifierHash, me.sha)
 }
 
 func rc4EncryptDecrypt(src []byte, key []byte) ([]byte, error) {
@@ -187,7 +159,7 @@ func (me *officeBinRC4) CheckPassword(passwordUnicodeByte []byte) (err error) {
 
 // 2.3.6.1
 func (me *officeBinRC4) initData() (err error) {
-	var startIndex int = 4 // versio大小是4，前面已经判断过来
+	var startIndex int = 4 // versio大小是4，前面已经判断过了
 	// Salt (16 bytes):
 	me.Salt = me.b[startIndex : startIndex+16]
 	startIndex += 16
@@ -222,35 +194,33 @@ func (me *officeBinRC4) getEncryptionKey(pwd []byte) (err error) {
 	if me.encryptionKey, err = H(me.sha, me.encryptionKey, []byte{0, 0, 0, 0}); err != nil {
 		return
 	}
-	fmt.Printf("me.encryptionKey=% X\r\n", me.encryptionKey)
-	fmt.Printf("me.EncryptedVerifier=% X\r\n", me.EncryptedVerifier)
-	fmt.Printf("me.EncryptedVerifierHash=% X\r\n", me.EncryptedVerifierHash)
 
 	return nil
 }
 
 func (me *officeBinRC4) passwordVerifier() (err error) {
-	// Decrypt the encrypted verifier 解密加密验证器
-	var decryptedVerifier []byte
-	if decryptedVerifier, err = rc4EncryptDecrypt(me.EncryptedVerifier, me.encryptionKey); err != nil {
-		return errors.New("decryptedVerifier:" + err.Error())
-	}
-	decryptedVerifier = decryptedVerifier[:16]
-	fmt.Printf("decryptedVerifier=\r\n% x\r\n", decryptedVerifier)
+	return passwordVerifier(me.encryptionKey, me.EncryptedVerifier, me.EncryptedVerifierHash, me.sha)
+}
 
-	var decryptedVerifierHash []byte
-	if decryptedVerifierHash, err = rc4EncryptDecrypt(me.EncryptedVerifierHash, me.encryptionKey); err != nil {
-		return errors.New("decryptedVerifierHash:" + err.Error())
+func passwordVerifier(encryptionKey, EncryptedVerifier, EncryptedVerifierHash []byte, sha hash.Hash) (err error) {
+	// Decrypt the encrypted verifier 解密加密验证器
+	var r *rc4.Cipher
+	if r, err = rc4.NewCipher(encryptionKey); err != nil {
+		return err
 	}
-	decryptedVerifierHash = decryptedVerifierHash[:16]
-	fmt.Printf("decryptedVerifierHash=\r\n% x\r\n", decryptedVerifierHash)
+
+	// Decrypt the encrypted verifier 解密加密验证器
+	var decryptedVerifier []byte = make([]byte, len(EncryptedVerifier))
+	r.XORKeyStream(decryptedVerifier, EncryptedVerifier)
+
+	var decryptedVerifierHash []byte = make([]byte, len(EncryptedVerifierHash))
+	r.XORKeyStream(decryptedVerifierHash, EncryptedVerifierHash)
+
+	var checkHash []byte
 	// 4.	Calculate the SHA-1 hash value of the Verifier value calculated in step 2.
-	me.sha.Reset()
-	if _, err = me.sha.Write(decryptedVerifier); err != nil {
-		return errors.New("sha.Write:" + err.Error())
+	if checkHash, err = H(sha, decryptedVerifier, nil); err != nil {
+		return
 	}
-	checkHash := me.sha.Sum(nil)
-	fmt.Printf("checkHash=\r\n% x\r\n", checkHash)
 
 	if bytes.Compare(checkHash, decryptedVerifierHash) != 0 {
 		return errors.New("密码错误。")

@@ -3,7 +3,6 @@ package offCrypto
 import (
 	"encoding/binary"
 	"errors"
-	"fmt"
 )
 
 func NewIEncrypted(b []byte, bECMA376 bool) (iEncryptedType IEncryptedType, err error) {
@@ -24,7 +23,7 @@ func newECMA376(b []byte) (iEncryptedType IEncryptedType, err error) {
 	if p.vMajor == 0x0004 &&
 		p.vMinor == 0x0004 {
 		// Agile敏捷 Encryption
-		fmt.Println("ECMA-376 Agile Encryption")
+		println("ECMA-376 Agile Encryption")
 		agl := &agile{}
 		agl.b = b
 		if err = agl.initData(); err != nil {
@@ -37,7 +36,7 @@ func newECMA376(b []byte) (iEncryptedType IEncryptedType, err error) {
 		p.vMajor == 0x0004) &&
 		p.vMinor == 0x0002 {
 		// Standard Encryption
-		fmt.Println("ECMA-376 rc4 Encryption")
+		println("ECMA-376 rc4 Encryption")
 		r := &ecma376RC4{}
 		r.b = b
 		if err = r.initData(); err != nil {
@@ -49,7 +48,7 @@ func newECMA376(b []byte) (iEncryptedType IEncryptedType, err error) {
 		p.vMajor == 0x0004) &&
 		p.vMinor == 0x0003 {
 		// Extensible Encryption
-		fmt.Println("Extensible Encryption")
+		println("Extensible Encryption")
 		return nil, errors.New("未实现的加密类型。")
 	} else {
 		return nil, errors.New("未知加密类型。")
@@ -59,6 +58,7 @@ func newECMA376(b []byte) (iEncryptedType IEncryptedType, err error) {
 }
 
 func newOffBin(b []byte) (iEncryptedType IEncryptedType, err error) {
+	// Workbook Stream的加密信息是从0x1A开始的，这个是通过查看字节信息猜的！
 	b = b[0x1A:]
 
 	p := new(version)
@@ -66,10 +66,10 @@ func newOffBin(b []byte) (iEncryptedType IEncryptedType, err error) {
 	if startIndex, err = readVersion(p, b, startIndex); err != nil {
 		return
 	}
-	fmt.Printf("%#v\r\n", p)
+
 	if p.vMajor == 0x0001 &&
 		p.vMinor == 0x0001 {
-		fmt.Println("OffBinary rc4 Encryption")
+		println("OffBinary rc4 Encryption")
 		r := &officeBinRC4{}
 		r.b = b
 		if err = r.initData(); err != nil {
@@ -82,7 +82,7 @@ func newOffBin(b []byte) (iEncryptedType IEncryptedType, err error) {
 		p.vMajor == 0x0004) &&
 		p.vMinor == 0x0002 {
 		// Standard Encryption
-		fmt.Println("OffBinary rc4 CryptoAPI Encryption")
+		println("OffBinary rc4 CryptoAPI Encryption")
 		r := &rc4CryptoAPI{}
 		r.b = b
 		if err = r.initData(); err != nil {
@@ -94,7 +94,6 @@ func newOffBin(b []byte) (iEncryptedType IEncryptedType, err error) {
 		return nil, errors.New("未知加密类型。")
 	}
 
-	return nil, nil
 	return nil, nil
 }
 
