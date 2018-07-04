@@ -3,6 +3,7 @@ package permuCombin
 
 import (
 	"errors"
+	"strings"
 )
 
 // 排列
@@ -42,6 +43,50 @@ func Permu(src []byte, selectCount uint, ch chan []byte) (resultCount uint32, er
 				item[j] = src[arrPointer[j]]
 			}
 			ch <- item
+		}
+
+		index = lastIndex
+		// 进位
+		// 找到还没有超过iCount的index
+		for arrPointer[index] == iCount {
+			arrPointer[index] = 0
+			index--
+			if index >= 0 {
+				arrPointer[index]++
+			} else {
+				return 1, nil
+			}
+		}
+	}
+
+	return 1, nil
+}
+func PermuString(src []string, selectCount uint, ch chan []byte) (resultCount uint32, err error) {
+	if selectCount == 0 {
+		return 0, errors.New("选择的个数为0。")
+	}
+
+	iCount := uint(len(src))
+	if iCount == 0 {
+		return 0, errors.New("数据源为空。")
+	}
+
+	arrPointer := make([]uint, selectCount)
+	var j uint = 0
+
+	// 从最后1个位置开始变化
+	index := int(selectCount - 1)
+	lastIndex := index
+	for {
+		// 永远是最后1个位置增加，然后进位过去
+		for ; arrPointer[lastIndex] < iCount; arrPointer[lastIndex]++ {
+
+			// 生成1个结果
+			item := make([]string, selectCount)
+			for j = 0; j < selectCount; j++ {
+				item[j] = src[arrPointer[j]]
+			}
+			ch <- []byte(strings.Join(item, ""))
 		}
 
 		index = lastIndex
