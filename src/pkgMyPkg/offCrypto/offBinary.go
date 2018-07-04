@@ -11,7 +11,7 @@ import (
 )
 
 type rc4CryptoAPI struct {
-	ecma376RC4
+	encrypterData
 }
 
 func (me *rc4CryptoAPI) CheckPassword(passwordUnicodeByte []byte) (err error) {
@@ -133,6 +133,11 @@ func (me *rc4CryptoAPI) passwordVerifier() (err error) {
 	return passwordVerifier(me.encryptionKey, me.EncryptedVerifier, me.EncryptedVerifierHash, me.sha)
 }
 
+func (me *rc4CryptoAPI) Decrypt(EncryptedPackage []byte) (decrypt []byte, err error) {
+
+	return nil, errors.New("未实现。")
+}
+
 func rc4EncryptDecrypt(src []byte, key []byte) ([]byte, error) {
 	if r, err := rc4.NewCipher(key); err != nil {
 		return nil, err
@@ -144,7 +149,7 @@ func rc4EncryptDecrypt(src []byte, key []byte) ([]byte, error) {
 }
 
 type officeBinRC4 struct {
-	ecma376RC4
+	encrypterData
 }
 
 func (me *officeBinRC4) CheckPassword(passwordUnicodeByte []byte) (err error) {
@@ -200,6 +205,11 @@ func (me *officeBinRC4) getEncryptionKey(pwd []byte) (err error) {
 
 func (me *officeBinRC4) passwordVerifier() (err error) {
 	return passwordVerifier(me.encryptionKey, me.EncryptedVerifier, me.EncryptedVerifierHash, me.sha)
+}
+
+func (me *officeBinRC4) Decrypt(EncryptedPackage []byte) (decrypt []byte, err error) {
+
+	return nil, errors.New("未实现。")
 }
 
 func passwordVerifier(encryptionKey, EncryptedVerifier, EncryptedVerifierHash []byte, sha hash.Hash) (err error) {

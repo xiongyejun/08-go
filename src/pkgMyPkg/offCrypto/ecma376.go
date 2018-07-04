@@ -123,6 +123,9 @@ func (me *agile) initData() (err error) {
 			return errors.New("未设置的HashAlgorithm：" + me.E.KE.KES[0].EK.HashAlgorithm)
 		}
 
+		if me.E.KE.KES[0].EK.SpinCount != 100000 {
+			return errors.New("SpinCount异常 != 100000：" + strconv.Itoa(int(me.E.KE.KES[0].EK.SpinCount)))
+		}
 	}
 
 	return nil
@@ -236,13 +239,20 @@ func (me *agile) passwordVerifier() (err error) {
 	return nil
 }
 
-type ecma376RC4 struct {
-	b []byte
+func (me *agile) Decrypt(EncryptedPackage []byte) (decrypt []byte, err error) {
+	// EncryptedPackage前8个字节是文件的大小
+	//	var size uint64
+	//	if size, err = byteToUint64(EncryptedPackage[:8]); err != nil {
+	//		return
+	//	}
 
-	sha           hash.Hash
-	encryptionKey []byte
-	keySize       int
-	EncryptionVerifier
+	//
+
+	return nil, errors.New("未实现。")
+}
+
+type ecma376RC4 struct {
+	encrypterData
 }
 
 func (me *ecma376RC4) CheckPassword(passwordUnicodeByte []byte) (err error) {
@@ -437,4 +447,19 @@ func (me *ecma376RC4) passwordVerifier() (err error) {
 	}
 
 	return nil
+}
+
+func (me *ecma376RC4) Decrypt(EncryptedPackage []byte) (decrypt []byte, err error) {
+	// EncryptedPackage前8个字节是文件的大小
+	var size uint64
+	if size, err = byteToUint64(EncryptedPackage[:8]); err != nil {
+		return
+	}
+
+	ecb := aesECB.NewAesTool(me.encryptionKey, me.keySize/8)
+	if decrypt, err = ecb.Decrypt(EncryptedPackage[8:]); err != nil {
+		return
+	}
+
+	return decrypt[:size], nil
 }

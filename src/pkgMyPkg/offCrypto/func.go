@@ -13,6 +13,13 @@ func byteToUint32(src []byte) (x uint32, err error) {
 	return uint32(src[0]) | uint32(src[1])<<8 | uint32(src[2])<<16 | uint32(src[3])<<24, nil
 }
 
+func byteToUint64(src []byte) (x uint64, err error) {
+	if len(src) != 8 {
+		return 0, errors.New("转uint64必须是8个字节。")
+	}
+	return uint64(src[0]) | uint64(src[1])<<8 | uint64(src[2])<<16 | uint64(src[3])<<24 | uint64(src[4])<<32 | uint64(src[5])<<40 | uint64(src[6])<<48 | uint64(src[7])<<56, nil
+}
+
 func byteToUint16(src []byte) (x uint16, err error) {
 	if len(src) != 2 {
 		return 0, errors.New("转uint32必须是2个字节。")

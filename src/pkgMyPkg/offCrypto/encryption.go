@@ -11,6 +11,16 @@ import (
 type IEncryptedType interface {
 	initData() (err error) // 读取需要的数据
 	CheckPassword(passwordUnicodeByte []byte) (err error)
+	Decrypt(EncryptedPackage []byte) (decrypt []byte, err error) // 解密文件
+}
+
+type encrypterData struct {
+	b []byte
+
+	sha           hash.Hash
+	encryptionKey []byte
+	keySize       int
+	EncryptionVerifier
 }
 
 // 2.3.3
