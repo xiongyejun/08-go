@@ -1,0 +1,10 @@
+C:\Users\Administrator\AppData\Local\Temporary Projects\OfficeRC4\bin\Debug\OfficeRC4.exe.config
+C:\Users\Administrator\Desktop\加密\OfficeRC4\OfficeRC4\bin\Debug\OfficeRC4.exe.config
+C:\Users\Administrator\Desktop\加密\OfficeRC4\OfficeRC4\bin\Debug\OfficeRC4.exe
+C:\Users\Administrator\Desktop\加密\OfficeRC4\OfficeRC4\bin\Debug\OfficeRC4.pdb
+C:\Users\Administrator\Desktop\加密\OfficeRC4\OfficeRC4\obj\Debug\OfficeRC4.csprojResolveAssemblyReference.cache
+C:\Users\Administrator\Desktop\加密\OfficeRC4\OfficeRC4\obj\Debug\OfficeRC4.exe
+C:\Users\Administrator\Desktop\加密\OfficeRC4\OfficeRC4\obj\Debug\OfficeRC4.pdb
+C:\Users\Administrator\Desktop\OfficeEncryption\OfficeRC4\OfficeRC4\bin\Debug\OfficeRC4.exe.config
+C:\Users\Administrator\Desktop\OfficeEncryption\OfficeRC4\OfficeRC4\obj\Debug\OfficeRC4.exe
+C:\Users\Administrator\Desktop\OfficeEncryption\OfficeRC4\OfficeRC4\obj\Debug\OfficeRC4.pdb

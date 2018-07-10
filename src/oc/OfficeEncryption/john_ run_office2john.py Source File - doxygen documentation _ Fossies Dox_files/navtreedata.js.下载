@@ -1,0 +1,161 @@
+/*
+@ @licstart  The following is the entire license notice for the
+JavaScript code in this file.
+
+Copyright (C) 1997-2017 by Dimitri van Heesch
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+@licend  The above is the entire license notice
+for the JavaScript code in this file
+*/
+var NAVTREE =
+[
+  [ "john", "index.html", [
+    [ "Auditing Kerberos Hashes", "md_doc_Kerberos-Auditing-HOWTO.html", null ],
+    [ "SecureMode", "md_doc_SecureMode-tutorial.html", null ],
+    [ "Deprecated List", "deprecated.html", null ],
+    [ "Modules", "modules.html", "modules" ],
+    [ "Namespaces", "namespaces.html", [
+      [ "Namespace List", "namespaces.html", "namespaces_dup" ],
+      [ "Namespace Members", "namespacemembers.html", [
+        [ "All", "namespacemembers.html", "namespacemembers_dup" ],
+        [ "Functions", "namespacemembers_func.html", null ],
+        [ "Variables", "namespacemembers_vars.html", "namespacemembers_vars" ]
+      ] ]
+    ] ],
+    [ "Data Structures", "annotated.html", [
+      [ "Data Structures", "annotated.html", "annotated_dup" ],
+      [ "Data Structure Index", "classes.html", null ],
+      [ "Class Hierarchy", "hierarchy.html", "hierarchy" ],
+      [ "Data Fields", "functions.html", [
+        [ "All", "functions.html", "functions_dup" ],
+        [ "Functions", "functions_func.html", "functions_func" ],
+        [ "Variables", "functions_vars.html", "functions_vars" ],
+        [ "Properties", "functions_prop.html", null ]
+      ] ]
+    ] ],
+    [ "Files", "files.html", [
+      [ "File List", "files.html", "files_dup" ],
+      [ "Globals", "globals.html", [
+        [ "All", "globals.html", "globals_dup" ],
+        [ "Functions", "globals_func.html", "globals_func" ],
+        [ "Variables", "globals_vars.html", "globals_vars" ],
+        [ "Typedefs", "globals_type.html", "globals_type" ],
+        [ "Enumerations", "globals_enum.html", null ],
+        [ "Enumerator", "globals_eval.html", "globals_eval" ],
+        [ "Macros", "globals_defs.html", "globals_defs" ]
+      ] ]
+    ] ]
+  ] ]
+];
+
+var NAVTREEINDEX =
+[
+"1password2john_8py.html",
+"BF__std_8c.html#acc39ab7cd125cdaf95ccf046af6b8c11",
+"DES__fmt_8c.html#a916b2099e081398e685a6e84de9a4740",
+"EPI__fmt__plug_8c.html#a149ec2ce75e32f40c2334ef794e41e6b",
+"KRB5__fmt__plug_8c.html#af39b2492edddf0e28aaee633bad31c04",
+"MD5__std_8c.html#a5a3218372dfb7f4f3e7aa7b4ece9becd",
+"NETLM__fmt__plug_8c.html#aaa59b0b054515ee22b2f1bb5170c75d1",
+"NS__fmt__plug_8c.html#ae9ced3e95dd15b1d31224b1728b54bf8",
+"SKEY__jtr__plug_8c.html#ae26bdc815813bb1ca737b53163daa786",
+"adl__structures_8h.html#a8e5fe592b41dc481b514994654e4c755",
+"alpha_8h.html#a66e5b13c38212b63e9423ed9b7959a9a",
+"bench_8c_source.html",
+"blake2b-load-sse41_8h.html#a45695eefa13361f548ca08c98c41204f",
+"byteorder_8h.html#a642b4799ea02331615d017e0241414cd",
+"class7z2john_1_1Folder.html#a2ee15469b40311ba14b8a42d9252f818",
+"classmain.html#a090cf4995f5414ffef0a470398b8e5a9",
+"classmain.html#a95cb1bd3175d3ce5ef4d57870410a5f5",
+"classoffice2john_1_1OleFileIO.html#a663c091f9c2e3bfe7c57a0a3609b88c6",
+"common-opencl_8c.html#a413c7dc8907a4381d8924e41aa987766",
+"compiler_8c.html#a7d0ae9a4bdd79875edf411f4aefd61d1",
+"cram-md5__fmt__plug_8c.html#a82892d371f876a270725db825953c255",
+"cryptsha512__common_8h.html#ae97978676e1bb204650a848cd67e7816",
+"cuda__phpass_8h.html#a1655a9513ffef1bae0458a002cac71f7",
+"d3des_8c.html#ab632c3eaa6ac5b968450a1b53a238788",
+"dragonfly3__fmt__plug_8c.html#ad826dcad99e15e66901583f7b1f50bed",
+"dynamic_8h.html#a3284a060201d89dbcdd9d53e4a6f3afe",
+"dynamic_8h.html#ad72e1e5fd860359e02962bea744ddae2",
+"dynamic__fmt_8c.html#a0fce33b163f31e4b067f96c2add674b5",
+"dynamic__fmt_8c.html#ab80c929fbfaff49ce638a86404ae0f93",
+"dynamic__preloads_8c.html#a769e848e5af6ba7e39df79d641408845",
+"ecryptfs__fmt__plug_8c.html#ad7097b6a4936b6e17eaa74f0c31665f6",
+"encoding__data_8h.html#a598ce5c728a16499b7b9e7ee4c064a5c",
+"external_8h.html#a6e7b0674193ccd5491d9c6d8485576af",
+"functions_vars_u.html",
+"gost_8c.html#a43020491a8e74939ef1ec49250c3bdcc",
+"gpg2john_8c.html#ad3f61d0eb03db791f2091b6f2563f1a6",
+"group__DEFINES.html#gab9643deeb8288ea0cc112e8d6d1503f8",
+"group__define__adl__results.html#gae7bd43f87e2aee3cc680bb9b94a655b4",
+"group__define__ddcinfo__pixelformats.html#gab8592e90fc4b223079819b2d8909b8b9",
+"group__define__formats__ovr.html#ga108917c02dcce84d63d6c4fbcca53c0f",
+"group__define__modetiming__standard.html",
+"group__defines__gamutspace.html#ga11c2690a12ad1552f13f6acf9d476901",
+"hmacSHA1__fmt__plug_8c.html#ae5f7b9ee44f550ecf9f01630cbec1e34",
+"hsrp__fmt__plug_8c.html#a8bee39b8a66ed0f9a26291529bee6a4a",
+"inc_8c_source.html",
+"keychain__fmt__plug_8c.html#a282abb718f9e59cb92961f352627243c",
+"krb5pa-md5__fmt__plug_8c.html#a895b05028802cce98f7fc81abe3549b2",
+"listconf_8c.html#aab464aa58fd0160e0ff46eb64705d71e",
+"luks__fmt__plug_8c.html#aabb9252bd5b754ffa5a4794a23b6116b",
+"md5_8c_source.html",
+"memory_8h.html#a37d7fba73d3ea4e1d253208ce98145d8",
+"mmap-windows_8c.html#a298ddbffafbe6cf941b92092edfb86a5",
+"mssql-old__fmt__plug_8c.html#a69614a168b5c1186259de07d6477564d",
+"namespacekeystore2john.html",
+"nt2__fmt__plug_8c.html#a2ddd6b7434ba1c39786758fe8760055f",
+"office2john_8py.html#a38de60d272599898cd5590eafbf32420",
+"opencl__DES__bs__plug_8c.html",
+"opencl__rakp__fmt__plug_8c_source.html",
+"opencl__unicode_8h.html#ac52c460a1315af12d86ca08491d41dec",
+"os_8h.html#a32b823c25c0494590b626157b0d479b3",
+"params_8h.html#a9728752e4960c0fbd1df85ab840c5afc",
+"pcap2john_8py.html#a29c95a419ec1e7e9c68be8e4d759d549",
+"phpassMD5__fmt__plug_8c.html#a16f5456838ac6100fd5b8f1b90112928",
+"ppc64_8h.html#aaa3f1b781e651b21a371f22150e3892d",
+"racf__fmt__plug_8c.html#a2208145a3f4ad58ccdde51bf5aaf9c32",
+"rar__fmt__plug_8c.html#a773c569fe14a0383b1e35387a7dda4ce",
+"rawSHA0__fmt__plug_8c.html#a0d0cc05d98dc9cfeb27e8da601296453",
+"rawSHA384__fmt__plug_8c.html#af03110e650a92a584d730028cd20126c",
+"ripemd__plug_8c.html#a84154ed21a0f16896fe1f36e36c1bbce",
+"sapB__fmt__plug_8c.html#a2208145a3f4ad58ccdde51bf5aaf9c32",
+"sha256_8h.html#a39964e6b9032b4caadcd491652c048b5",
+"skein__fmt__plug_8c.html#aa3ded19d381e369877d641281b81b71d",
+"sph__panama_8h.html#ae270b2abb9a22a328191c5fb3a5d81ae",
+"sshng2john_8py.html#a9537bc70b3877a60b1edbba7dae279e8",
+"structADLDisplayInfo.html#a13b77e2088d3a0146f00b1af71b70e09",
+"structADLSLSMap.html#afc6e4c005fe7abc68cab7e8da99cf78d",
+"structSHA256__CTX.html#a8abe2f69376e3b9e06e6f5c82342d17b",
+"structcencrypted__v2__header.html#acd071dcf7d3873974336b0906a487feb",
+"structcustom__salt.html#a8d177ed1707912890abb2a3888f15641",
+"structfmt__methods.html#a2319a98c4094a266fcf087629584a628",
+"structoptions__main.html#a64e0f33e83509deebed75b832954a08c",
+"structreqinfo__t.html#a2908d77ad0d8680f062aa2dca55e2c41",
+"structtcp__hdr.html#a2f06bd3bbf8f34768d7bded766b00c41",
+"sunmd5__fmt__plug_8c.html#ae6a74107a47199b36d7977a503c65338",
+"trip__fmt_8c.html#a916b2099e081398e685a6e84de9a4740",
+"uaf__hash_8c.html#aa707d1afd63525035ed6ed2c7bb697e8",
+"unique_8c.html#ab41bf19330e50c3c7bf3544c53f30971",
+"unrarvm_8c.html#a73c23676dbf13e3002aeec49b47140d8",
+"vnc__fmt__plug_8c.html#ae9ced3e95dd15b1d31224b1728b54bf8",
+"wordlist_8c.html#a0926c57b7b60203ebb8fc506a3da896f",
+"x86-64_8h.html#adab951c5b7215e779555d867ae4bf351"
+];
+
+var SYNCONMSG = 'click to disable panel synchronisation';
+var SYNCOFFMSG = 'click to enable panel synchronisation';
