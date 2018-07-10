@@ -1,9 +1,9 @@
 package permuCombin
 
-import (
-	"fmt"
-	"testing"
-)
+//import (
+//	"fmt"
+//	"testing"
+//)
 
 func TestPermu(t *testing.T) {
 	src := make([]string, 0)

@@ -4,22 +4,16 @@ import (
 	"fmt"
 )
 
+var count int = 0
+
 func main() {
-	str := "abc,hao,de"
-	var key []byte = []byte("19850522")
-	fmt.Printf("src = %s\r\n", str)
+	fmt.Println(getCount(10, 4))
+}
 
-	c, err := desEncryptString(str, key)
-	if err != nil {
-		fmt.Println(err)
-		return
+func getCount(m, n int) (icount int) {
+	icount = 1
+	for i := 0; i < n; i++ {
+		icount *= m
 	}
-	fmt.Printf("encrypt = %s\r\n", c)
-
-	d, err := desDecryptString(c, key)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Printf(" desDecrypt = %s\r\n", d)
+	return
 }

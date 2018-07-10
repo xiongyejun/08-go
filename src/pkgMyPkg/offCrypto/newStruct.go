@@ -58,9 +58,6 @@ func newECMA376(b []byte) (iEncryptedType IEncryptedType, err error) {
 }
 
 func newOffBin(b []byte) (iEncryptedType IEncryptedType, err error) {
-	// Workbook Stream的加密信息是从0x1A开始的，这个是通过查看字节信息猜的！
-	b = b[0x1A:]
-
 	p := new(version)
 	var startIndex int
 	if startIndex, err = readVersion(p, b, startIndex); err != nil {

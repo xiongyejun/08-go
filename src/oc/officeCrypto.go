@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"os"
 	"pkgMyPkg/compoundFile"
+	"pkgMyPkg/keysInSQLite"
 	"pkgMyPkg/offCrypto"
 	"pkgMyPkg/permuCombin"
 	"runtime"
@@ -21,21 +22,32 @@ import (
 var COUNT_CHECK int = runtime.NumCPU() // 启动多少个进程测试
 var arrCount []uint64                  // 统计已经测试的个数
 
-var ies []offCrypto.IEncryptedType
-var chanPsw chan []byte
+var ies []offCrypto.IEncryptedType // 密码测试的接口
+var chanPsw chan []byte            // 用通道里接受读取的密码
 var bflag bool = false
 var totalsum uint64 = 0
 
-var bKey *bool
-var bPermu *bool
+// 命令参数，选择用什么来获取密码
+var bKey *bool    // 通过txt文件
+var bPermu *bool  // 排列组合
+var bSQLite *bool // 读取数据库
+
+// 密码信息存放的文件名
+const EI_OFFICE_07 string = "EncryptionInfo"
+const EI_XLS_03 string = "Workbook"
+const EI_DOC_03 string = "1Table"
+const EI_PPT_03 string = "PowerPoint Document"
 
 func main() {
-	fmt.Println("officeCrypto <-k或-p> <FileName> <key或srcPermu的txt> <selectCount>\r\nsrcPermu的数据源一行一个,-p时候还要设置selectCount。")
-	if *bKey && *bPermu {
-		fmt.Println("-k和-p只能设置一个。")
+	fmt.Println("1 oc <-s> <FileName> <sqlWhere txt>") // sqlWhere 只需要在第1行设置条件
+	fmt.Println("2 oc <-k> <FileName> <key txt>")
+	fmt.Println("3 oc <-p> <FileName> <srcPermu txt> <selectCount>")
+
+	if *bKey && *bPermu && *bSQLite {
+		fmt.Println("err: -k、-p、-s只能设置一个。")
 		return
-	} else if !*bKey && !*bPermu {
-		fmt.Println("-k和-p至少设置一个。")
+	} else if !*bKey && !*bPermu && !*bSQLite {
+		fmt.Println("err: -k、-p、-s至少设置一个。")
 		return
 	}
 
@@ -43,8 +55,12 @@ func main() {
 		if len(os.Args) != 4 {
 			return
 		}
-	} else {
+	} else if *bPermu {
 		if len(os.Args) != 5 {
+			return
+		}
+	} else if *bSQLite {
+		if len(os.Args) != 4 {
 			return
 		}
 	}
@@ -68,7 +84,7 @@ func main() {
 	}
 
 	// 获取测试的密码
-	chanPsw = make(chan []byte, COUNT_CHECK*10)
+	chanPsw = make(chan []byte, COUNT_CHECK*100)
 	if *bKey {
 		// 读取记录密码的txt文件
 		if f, err := os.Open(os.Args[3]); err != nil {
@@ -78,7 +94,7 @@ func main() {
 			defer f.Close()
 			go readPassword(chanPsw, f)
 		}
-	} else {
+	} else if *bPermu {
 		//  使用排列组合方式
 		var src []string
 		if f, err := os.Open(os.Args[3]); err != nil {
@@ -95,7 +111,17 @@ func main() {
 			fmt.Println("src =", src)
 			go permuCombin.PermuString(src, uint(selectCount), chanPsw)
 			totalsum = uint64(getCount(len(src), int(selectCount)))
+			fmt.Printf("共有排列组合%d个。\r\n", totalsum)
 		}
+	} else if *bSQLite {
+		// 读取SQLite数据库
+		if err := keysInSQLite.GetDB(); err != nil {
+			fmt.Println(err)
+			return
+		}
+		defer keysInSQLite.CloseDB()
+
+		go keysInSQLite.SelectValue(os.Args[3], chanPsw, &totalsum)
 	}
 
 	// 开始测试密码
@@ -120,10 +146,11 @@ func main() {
 }
 
 func init() {
+	bSQLite = flag.Bool("s", false, "从SQLite读取")
 	bKey = flag.Bool("k", false, "读取密码字典")
 	bPermu = flag.Bool("p", false, "排列组合")
 
-	//	flag.PrintDefaults()
+	flag.PrintDefaults()
 	flag.Parse()
 }
 
@@ -142,7 +169,7 @@ func checkPassword(ie offCrypto.IEncryptedType, chanPsw chan []byte, count *uint
 			if b, err := unicode2Asc(pswUnicode); err != nil {
 				fmt.Println(err)
 			} else {
-				fmt.Printf("\r\n找到密码：%s\r\n", b)
+				fmt.Printf("\r\n找到密码%s密码长度=%d\r\n", b, len(b))
 				bflag = true
 			}
 			os.Exit(0)
@@ -151,7 +178,7 @@ func checkPassword(ie offCrypto.IEncryptedType, chanPsw chan []byte, count *uint
 	}
 }
 
-// 输出测试了多少个
+// 测试了多少个，将多个goroutine统计的数据加起来
 func getSumCount() uint64 {
 	// 统计测试的总个数
 	var sum uint64 = 0
@@ -166,25 +193,50 @@ func readEncryptionInfo(fileName string) (bEncryptionInfo []byte, bECMA376 bool,
 	if bEncryptionInfo, err = ioutil.ReadFile(fileName); err != nil {
 		return
 	} else {
-		// 可以直接读取加密的文件EncryptionInfo和Workbook
-		if fileName == "EncryptionInfo" {
+		// 可以直接读取加密的文件EncryptionInfo和Workbook……
+		if fileName == EI_OFFICE_07 {
 			bECMA376 = true
-		} else if fileName == "Workbook" {
+		} else if fileName == EI_XLS_03 {
 			bECMA376 = false
+			bEncryptionInfo = bEncryptionInfo[0x1A:]
+		} else if fileName == EI_DOC_03 {
+			bECMA376 = false
+		} else if fileName == EI_PPT_03 {
+			bECMA376 = false
+			// ppt加密信息放在文件的后面
+			if bEncryptionInfo, err = getPPTEncryptionInfo(bEncryptionInfo); err != nil {
+				return
+			}
 		} else {
 			// 否则解析复合文档
 			if cf, err1 := compoundFile.NewCompoundFile(bEncryptionInfo); err1 != nil {
 				err = err1
 				return
 			} else {
-				cf.Parse()
+				if err = cf.Parse(); err != nil {
+					fmt.Println(err)
+					return
+				}
 				// 先尝试读取ECMA376的
-				if bEncryptionInfo, err = cf.GetStream(`EncryptionInfo`); err != nil {
+				if bEncryptionInfo, err = cf.GetStream(EI_OFFICE_07); err != nil {
 					// 再尝试offBinary
-					if bEncryptionInfo, err = cf.GetStream("Workbook"); err != nil {
-						err = errors.New("没有找到EncryptionInfo或者Workbook流。")
-						return
+					if bEncryptionInfo, err = cf.GetStream(EI_XLS_03); err != nil {
+						// word的加密信息就是0开始
+						if bEncryptionInfo, err = cf.GetStream(EI_DOC_03); err != nil {
+							// ppt的加密信息放在最后面
+							if bEncryptionInfo, err = cf.GetStream(EI_PPT_03); err != nil {
+								err = errors.New("没有找到EncryptionInfo或者Workbook或1Table或PowerPoint Document流。")
+								return
+							} else {
+								if bEncryptionInfo, err = getPPTEncryptionInfo(bEncryptionInfo); err != nil {
+									return
+								}
+								bECMA376 = false
+							}
+						}
 					} else {
+						// Workbook Stream的加密信息是从0x1A开始的，这个是通过查看字节信息猜的！
+						bEncryptionInfo = bEncryptionInfo[0x1A:]
 						bECMA376 = false
 					}
 				} else {
@@ -197,38 +249,7 @@ func readEncryptionInfo(fileName string) (bEncryptionInfo []byte, bECMA376 bool,
 	return
 }
 
-func formatUint64(i uint64) (str string) {
-	str = strconv.Itoa(int(i % 10000))
-	i /= 10000
-	if i > 0 {
-		str = "万" + str
-	} else {
-		return
-	}
-
-	str = strconv.Itoa(int(i%10000)) + str
-	i /= 10000
-	if i > 0 {
-		str = "亿" + str
-	} else {
-		return
-	}
-	str = strconv.Itoa(int(i)) + str
-
-	return
-}
-
-func formatTime(second int64) string {
-	m := second / 60
-	second = second % 60
-
-	h := m / 60
-	m = m % 60
-
-	return fmt.Sprintf("%2d时%2d分%2d秒", h, m, second)
-}
-
-// 从f中读取密码，放入chanPsw
+// 从f中逐行读取密码，放入chanPsw
 func readPassword(chanPsw chan []byte, f *os.File) {
 	bf := bufio.NewReader(f)
 	for {
@@ -237,10 +258,12 @@ func readPassword(chanPsw chan []byte, f *os.File) {
 			break
 		}
 		chanPsw <- b
+		// 统计读取到了多少个密码
 		totalsum++
 	}
 }
 
+// 读取排列组合用的数据源，逐行读取
 func readPermuSrc(f *os.File) (src []string) {
 	src = make([]string, 0)
 	bf := bufio.NewReader(f)
@@ -250,37 +273,6 @@ func readPermuSrc(f *os.File) (src []string) {
 			break
 		}
 		src = append(src, string(b))
-	}
-	return
-}
-
-// asc的byte转换为unicode的byte
-func asc2Unicode(b []byte) []byte {
-	var bb []byte = make([]byte, len(b)*2)
-	for i := range b {
-		bb[i*2] = b[i]
-		bb[i*2+1] = 0
-	}
-	return bb
-}
-
-func unicode2Asc(b []byte) (bb []byte, err error) {
-	var iLen int = len(b)
-	if iLen%2 != 0 {
-		return nil, errors.New("输入的unicode byte长度必须是整数。")
-	}
-
-	bb = make([]byte, iLen)
-	for i := 0; i < iLen; i += 2 {
-		bb[i/2] = b[i]
-	}
-	return bb, nil
-}
-
-func getCount(m, n int) (icount int) {
-	icount = 1
-	for i := 0; i < n; i++ {
-		icount *= m
 	}
 	return
 }

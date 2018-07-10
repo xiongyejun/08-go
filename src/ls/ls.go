@@ -7,9 +7,11 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"pkgMySelf/colorPrint"
+	"pkgMyPkg/colorPrint"
 	"time"
 )
+
+const KB_TO_B float64 = 1024
 
 type ls struct {
 	dir          string
@@ -20,6 +22,7 @@ type ls struct {
 	sep          string
 	numDir       int32
 	numFile      int32
+	totalSize    int64
 
 	chanDir  chan string  // 控制搜索
 	chanFile chan outType // 控制输出
@@ -31,11 +34,12 @@ type ls struct {
 type outType struct {
 	isDir bool
 	name  string
+	size  int64
 }
 
 var l ls
 
-//var chanEnd chan int
+//var chanEnd chan int = make(chan int)
 
 func main() {
 	// 判断dir是否存在
@@ -58,11 +62,14 @@ func main() {
 	l.initExtColor()
 
 	go l.printOut()
+
+	//	<-chanEnd
+
 	time.Sleep(1e8)
-	for len(l.chanDir) != 0 || len(l.chanFile) != 0 {
+	for len(l.chanFile) != 0 || len(l.chanDir) != 0 {
 		time.Sleep(1e8)
 	}
-	fmt.Printf("dir Count = %d\r\nfile Count = %d\r\n", l.numDir, l.numFile)
+	fmt.Printf("%.2fmb\tDir Count = %d\tFile Count = %d\r\n", float64(l.totalSize)/KB_TO_B/KB_TO_B, l.numDir, l.numFile)
 }
 
 func init() {
@@ -107,9 +114,12 @@ func (this *ls) scanDir(dirName string) {
 	outtype := outType{}
 	for _, entry := range entrys {
 		outtype.isDir = false
+
 		if entry.IsDir() {
 			outtype.isDir = true
 			this.fScanDir(dirName, entry.Name())
+		} else {
+			outtype.size = entry.Size()
 		}
 		outtype.name = this.fGetFileName(dirName, entry.Name())
 		this.chanFile <- outtype
@@ -131,19 +141,25 @@ func getName(d string, entryName string) string {
 }
 
 func (this *ls) printOut() {
+	//	defer func() {
+	//		chanEnd <- 0
+	//	}()
+
 	for f := range this.chanFile {
 		if f.isDir {
 			this.numDir++
-			this.cd.SetColor(colorPrint.White, colorPrint.DarkYellow)
+			this.cd.SetColor(colorPrint.Black, colorPrint.Yellow)
+			fmt.Printf("%6s\t%s", "<DIR>", f.name)
 		} else {
 			this.numFile++
 			strExtension := path.Ext(f.name)
 			if v, ok := this.dicExtColor[strExtension]; ok {
 				this.cd.SetColor(colorPrint.White, v)
 			}
+			fmt.Printf("%.2fmb\t%s", float64(f.size)/KB_TO_B/KB_TO_B, f.name)
+			this.totalSize += f.size
 		}
 
-		fmt.Printf("%s", f.name)
 		this.cd.UnSetColor()
 		fmt.Printf("\r\n") // 回车要这里输，在前面输了下一行的空白也有颜色，不知道为什么
 	}
