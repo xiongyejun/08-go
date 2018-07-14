@@ -1,5 +1,10 @@
 # go
 
+# 编译压缩体积 #
+
+	go build -ldflags "-s -w"
+	-s 去掉符号信息， -w 去掉DWARF调试信息，得到的程序就不能用gdb调试了
+
 # 运行隐藏黑窗口 #
 	go build -ldflags "-H windowsgui" project.go
 
