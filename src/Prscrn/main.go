@@ -4,13 +4,14 @@ package main
 
 import (
 	"fmt"
-	//	"os"
+	"os"
 	"syscall"
 )
 
+// 需先设置环境为32位的
 func main() {
-	//	dllPath := os.Getenv("GOPATH") + `\src\Prscrn\PrScrn.dll`
-	//	fmt.Println(dllPath)
+	dllPath := os.Getenv("GOPATH") + `\src\Prscrn\PrScrn.dll`
+	fmt.Println(dllPath)
 	if dll, err := syscall.LoadLibrary("PrScrn.dll"); err != nil {
 		fmt.Println(err.Error() + " LoadLibrary")
 	} else {

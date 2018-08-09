@@ -23,7 +23,7 @@ func insertMenu() declarative.Menu {
 				AssignTo: &ct.miCustomUI,
 				Text:     "CustomUI(&C)",
 				OnTriggered: func() {
-					insertXml(START_customUI + START_TAB + START_GROUP + END_GROUP + END_TAB + END_customUI + "\r\nSub RibbonUI_onLoad(Ribbon As IRibbonUI)\r\n    Ribbon.ActivateTab \"TabID\"\r\nEnd Sub")
+					insertXml(START_customUI + START_TAB + START_GROUP + END_GROUP + END_TAB + END_customUI + "\r\nSub RibbonUI_onLoad(Ribbon As IRibbonUI)\r\n    On Error Resume Next\r\n    Ribbon.ActivateTab \"TabID\"\r\nEnd Sub")
 				},
 			},
 

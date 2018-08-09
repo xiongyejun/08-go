@@ -1,0 +1,105 @@
+package main
+
+import (
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"regexp"
+	"strconv"
+
+	"github.com/opesun/goquery"
+)
+
+var saveDir string = os.Getenv("USERPROFILE") + `\Desktop\pic\`
+var iCount int = 0
+
+func main() {
+	fmt.Println("downPic <点赞num> <from> <to>")
+	if len(os.Args) != 4 {
+		return
+	}
+	nimNum, err := strconv.Atoi(os.Args[1])
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	ifrom, err := strconv.Atoi(os.Args[2])
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	ito, err := strconv.Atoi(os.Args[3])
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println(saveDir)
+	os.RemoveAll(saveDir)
+	os.Mkdir(saveDir, 0666)
+	// 记录下上次的页面
+	ioutil.WriteFile(saveDir+"page_ito.txt", []byte(os.Args[3]), 0666)
+	var url string = `https://www.haha.mx/topic/1/new/`
+
+	for j := ifrom; j <= ito; j++ {
+		p, err := goquery.ParseUrl(url + strconv.Itoa(j))
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		t := p.Find(".joke-main-img")
+		t2 := p.Find(".joke-list-item-footer")
+
+		for i := 0; i < t.Length(); i++ {
+			d := t.Eq(i).Attr("src")
+			d2 := t2.Eq(i).Html()
+			if num, err := getNum(d2); err != nil {
+				fmt.Println(err)
+				return
+			} else {
+				if num >= nimNum {
+					downPic(d, num, j)
+				}
+
+			}
+		}
+	}
+
+}
+
+func downPic(picURL string, num int, page int) {
+	resp, err := http.Get(`https:` + picURL)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	iCount++
+	fileName := strconv.Itoa(num) + "_page" + strconv.Itoa(page) + picURL[len(picURL)-len("_1532596004.jpg"):]
+	if fileName[len(fileName)-6:] == ".image" {
+		fileName = fileName[len(fileName)-6:] + ".jfif"
+	}
+
+	ioutil.WriteFile(saveDir+fileName, b, 0666)
+	fmt.Printf("\rOK%4d->%s", iCount, fileName)
+}
+
+func getNum(strHtml string) (num int, err error) {
+	var reg *regexp.Regexp
+	reg, err = regexp.Compile(`<a href="javascript:;" title="称赞" class="btn-icon-good" data="g">(\d{1,999})</a>`)
+	if err != nil {
+		return
+	}
+	regResult := reg.FindAllStringSubmatch(strHtml, -1)
+	if len(regResult) > 0 {
+		return strconv.Atoi(regResult[0][1])
+	}
+
+	return
+}

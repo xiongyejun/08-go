@@ -2,18 +2,64 @@ package main
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"os/exec"
-	"path/filepath"
-	"runtime"
 	"strconv"
-	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
+
+const TABLE_DATA string = "datas"
+
+type insertData struct {
+	yearmonth int
+	drawno    int
+
+	Competitions string  // Competitions:"J联赛"
+	Datetime     string  // Datetime:"09-05-16 11:55:00"
+	Dispatchamt  float64 // Dispatchamt:"70.29"
+	Guestteam    string  // Guestteam:"大宫"
+	Handicap     int     // Handicap:"0"
+	Hitcount     float64 // Hitcount:"9"
+	Hostteam     string  // Hostteam:"名古屋"
+	Matchno      int     // Matchno:"1"
+	Result       int     // Result:"2"
+	Score        string  // Score:"1:1"
+	Spvalue      float64 // Spvalue:"6.011832"
+	Stake        float64 // Stake:"7.8153"
+
+	two   string
+	three string
+	four  string
+	five  string
+	six   string
+	seven string
+	eight string
+	nine  string
+	ten   string
+
+	// sp之和
+	twoSUMsp   float64
+	threeSUMsp float64
+	fourSUMsp  float64
+	fiveSUMsp  float64
+	sixSUMsp   float64
+	sevenSUMsp float64
+	eightSUMsp float64
+	nineSUMsp  float64
+	tenSUMsp   float64
+
+	// sp之积
+	twoPRODUCTsp   float64
+	threePRODUCTsp float64
+	fourPRODUCTsp  float64
+	fivePRODUCTsp  float64
+	sixPRODUCTsp   float64
+	sevenPRODUCTsp float64
+	eightPRODUCTsp float64
+	ninePRODUCTsp  float64
+	tenPRODUCTsp   float64
+}
 
 // 打开数据库
 func (me *dataStruct) getDB() (err error) {
@@ -21,7 +67,7 @@ func (me *dataStruct) getDB() (err error) {
 		if me.db, err = sql.Open("sqlite3", d.DBPath); err != nil {
 			return
 		} else {
-			fmt.Println("成功打开数据库。")
+			fmt.Println("成功连接数据库。")
 			return nil
 		}
 	} else {
@@ -29,12 +75,12 @@ func (me *dataStruct) getDB() (err error) {
 		if me.db, err = sql.Open("sqlite3", d.DBPath); err != nil {
 			return
 		} else {
-			// 														{Competitions:"J联赛", Datetime:"09-05-16 11:55:00", Dispatchamt:"70.29", Guestteam:"大宫", Handicap:"0", Hitcount:"9", Hostteam:"名古屋", Matchno:"1", Result:"2", Score:"1:1", Spvalue:"6.011832", Stake:"7.8153"}
-			sqlStmt := `create table datas (drawno integer not null, Competitions text, matchno integer not null, primary key (drawno,matchno));`
+			// 								year+month=201101								    {Competitions:"J联赛", Datetime:"09-05-16 11:55:00", Dispatchamt:"70.29", Guestteam:"大宫", Handicap:"0", Hitcount:"9", Hostteam:"名古屋", Matchno:"1", Result:"2", Score:"1:1", Spvalue:"6.011832", Stake:"7.8153"}
+			sqlStmt := `create table ` + TABLE_DATA + ` (yearmonth integer not null,drawno integer not null,Competitions text,Datetime text,Dispatchamt DOUBLE,Guestteam text,Handicap integer,Hitcount float64,Hostteam text,Matchno integer not null,Result integer,Score text,Spvalue DOUBLE,Stake DOUBLE,two varchar(2)  default '',three varchar(3)  default '',four varchar(4)  default '',five varchar(5)  default '',six varchar(6)  default '',seven varchar(7)  default '',eight varchar(8)  default '',nine varchar(9)  default '',ten varchar(10) default '',twoSUMsp DOUBLE,threeSUMsp DOUBLE,fourSUMsp DOUBLE,fiveSUMsp DOUBLE,sixSUMsp DOUBLE,sevenSUMsp DOUBLE,eightSUMsp DOUBLE,nineSUMsp DOUBLE,tenSUMsp DOUBLE,twoPRODUCTsp DOUBLE,threePRODUCTsp DOUBLE,fourPRODUCTsp DOUBLE,fivePRODUCTsp DOUBLE,sixPRODUCTsp DOUBLE,sevenPRODUCTsp DOUBLE,eightPRODUCTsp DOUBLE,ninePRODUCTsp DOUBLE,tenPRODUCTsp DOUBLE, primary key (yearmonth,drawno,Matchno));`
 			if _, err = d.db.Exec(sqlStmt); err != nil {
 				return
 			} else {
-				fmt.Println("成功创建数据库。")
+				fmt.Println("成功创建表datas。")
 				return nil
 			}
 		}
@@ -42,8 +88,7 @@ func (me *dataStruct) getDB() (err error) {
 }
 
 // 插入数据
-// filesPath 文件的路径
-func (me *DataStruct) insert(filesPath []string) (err error) {
+func (me *dataStruct) insertData(data []*insertData) (err error) {
 	var tx *sql.Tx
 	if tx, err = me.db.Begin(); err != nil {
 		return err
@@ -51,177 +96,102 @@ func (me *DataStruct) insert(filesPath []string) (err error) {
 	defer tx.Commit()
 
 	var stmt *sql.Stmt
-	if stmt, err = tx.Prepare("insert into " + me.tableName + "(id,name,star,ext,bytes) values(?,?,?,?,?)"); err != nil {
+	if stmt, err = tx.Prepare("insert into " + TABLE_DATA + "(yearmonth,drawno,Competitions,Datetime,Dispatchamt,Guestteam,Handicap,Hitcount,Hostteam,Matchno,Result,Score,Spvalue,Stake,two,three,four,five,six,seven,eight,nine,ten,twoSUMsp,threeSUMsp,fourSUMsp,fiveSUMsp,sixSUMsp,sevenSUMsp,eightSUMsp,nineSUMsp,tenSUMsp,twoPRODUCTsp,threePRODUCTsp,fourPRODUCTsp,fivePRODUCTsp,sixPRODUCTsp,sevenPRODUCTsp,eightPRODUCTsp,ninePRODUCTsp,tenPRODUCTsp) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"); err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	for i := range filesPath {
-		if _, err = os.Stat(filesPath[i]); err != nil {
-			fmt.Println(err)
-		} else {
-			// 读取文件字节
-			var b []byte
-
-			if b, err = ioutil.ReadFile(filesPath[i]); err != nil {
-				return err
-			} else {
-				strExt := filepath.Ext(filesPath[i])
-				// 去除文件名的后缀
-				name := strings.TrimSuffix(filepath.Base(filesPath[i]), strExt)
-				// 加密文件byte
-				if b, err = desEncrypt(b, d.key); err != nil {
-					return
-				}
-				// 加密文件名称
-				if name, err = desEncryptString(name, d.key); err != nil {
-					return
-				}
-				if _, err = stmt.Exec(nil, name, 0, strExt, b); err != nil {
-					fmt.Println(err)
-				}
-			}
+	for i := range data {
+		if _, err = stmt.Exec(data[i].yearmonth, data[i].drawno, data[i].Competitions, data[i].Datetime, data[i].Dispatchamt, data[i].Guestteam, data[i].Handicap, data[i].Hitcount, data[i].Hostteam, data[i].Matchno, data[i].Result, data[i].Score, data[i].Spvalue, data[i].Stake, data[i].two, data[i].three, data[i].four, data[i].five, data[i].six, data[i].seven, data[i].eight, data[i].nine, data[i].ten, data[i].twoSUMsp, data[i].threeSUMsp, data[i].fourSUMsp, data[i].fiveSUMsp, data[i].sixSUMsp, data[i].sevenSUMsp, data[i].eightSUMsp, data[i].nineSUMsp, data[i].tenSUMsp, data[i].twoPRODUCTsp, data[i].threePRODUCTsp, data[i].fourPRODUCTsp, data[i].fivePRODUCTsp, data[i].sixPRODUCTsp, data[i].sevenPRODUCTsp, data[i].eightPRODUCTsp, data[i].ninePRODUCTsp, data[i].tenPRODUCTsp); err != nil {
+			return
 		}
 	}
 
 	return nil
 }
 
-// 删除文件
-func (me *DataStruct) del(pID int) (err error) {
-	id := me.pID[pID]
-	sqlStmt := `delete from ` + me.tableName + ` where id = ` + strconv.Itoa(id)
-	if _, err = me.db.Exec(sqlStmt); err != nil {
-		return
-	}
-	return nil
-}
-
-// 重命名
-func (me *DataStruct) rn(pID int, newName string) (err error) {
-	id := me.pID[pID]
-	if newName, err = desEncryptString(newName, d.key); err != nil {
-		return
-	}
-	sqlStmt := `update ` + me.tableName + ` set name="` + newName + `" where id = ` + strconv.Itoa(id)
-	if _, err = me.db.Exec(sqlStmt); err != nil {
-		return
-	}
-	return nil
-}
-
-// 标星
-func (me *DataStruct) star(pID int, iStar int) (err error) {
-	id := me.pID[pID]
-	sqlStmt := `update ` + me.tableName + ` set star=` + strconv.Itoa(iStar) + ` where id = ` + strconv.Itoa(id)
-	if _, err = me.db.Exec(sqlStmt); err != nil {
-		return
-	}
-	return nil
-}
-
-// 列出所有文件
-func (me *DataStruct) list() (err error) {
+// 获取数据库中最新的数据
+func (me *dataStruct) getNewData() (strYearmonth string, recordDrawno map[int]int, err error) {
 	var rows *sql.Rows
-	if rows, err = d.db.Query("select id,star,name,ext from " + me.tableName); err != nil {
+	if rows, err = d.db.Query("select MAX(yearmonth) from " + TABLE_DATA); err != nil {
 		return
 	}
 	defer rows.Close()
 
-	me.pID = make([]int, 0)
-	var pIDCount int = 0
 	for rows.Next() {
-		var id int
-		var star int
-		var name string
-		var ext string
-		if err = rows.Scan(&id, &star, &name, &ext); err != nil {
+		var yearmonth int
+		if err = rows.Scan(&yearmonth); err != nil {
 			return
 		}
-		// 解密文件名
-		if name, err = desDecryptString(name, d.key); err != nil {
-			return
-		}
-
-		me.pID = append(me.pID, id)
-		fmt.Printf("%3d\t%3d\t%s\r\n", pIDCount, star, name+ext)
-		pIDCount++
+		strYearmonth = strconv.Itoa(yearmonth)
 	}
 
 	if err = rows.Err(); err != nil {
 		return
 	}
 
-	return nil
-}
-
-// 读取文件bytes，保存在当前程序的路径下，并打开
-func (me *DataStruct) show(pID int) (err error) {
-	var name string
-	var ext string
-	var ok bool
-
-	if pID >= len(me.pID) {
-		return errors.New("不存在的索引。")
+	if rows, err = d.db.Query("select drawno from " + TABLE_DATA + " WHERE yearmonth=" + strYearmonth); err != nil {
+		return
 	}
-	id := me.pID[pID]
-	// 先判断是否已经存在了
-	if name, ok = me.dicShow[id]; !ok {
-		var stmt *sql.Stmt
-		if stmt, err = d.db.Prepare("select name,ext,bytes from " + me.tableName + " where id = ?"); err != nil {
+	recordDrawno = make(map[int]int)
+	for rows.Next() {
+		var drawno int
+		if err = rows.Scan(&drawno); err != nil {
 			return
 		}
-		defer stmt.Close()
+		recordDrawno[drawno] = 0
+	}
 
-		var bi interface{}
-		if err = stmt.QueryRow(strconv.Itoa(id)).Scan(&name, &ext, &bi); err != nil {
-			return
-		}
-		// 文件保存路径
-		name = me.fileSavePath + strconv.Itoa(id) + ext
-		// 读取文件的byte
-		if b, ok := bi.([]byte); ok {
-			// 解密byte
-			if b, err = desDecrypt(b, d.key); err != nil {
-				return
-			}
-			// 保存文件
-			if err = ioutil.WriteFile(name, b, 0666); err != nil {
-				return
-			}
-			// 记录打开过的，退出时删除
-			me.dicShow[id] = name
+	if err = rows.Err(); err != nil {
+		return
+	}
 
-		}
-
-	} /* else {
-		fmt.Println("已经有了")
-	}*/
-
-	//	fmt.Println(name)
-	return openFolderFile(name)
+	return
 }
 
-// 删除已经释放的文件
-func (me *DataStruct) deleteShow() {
-	for _, item := range me.dicShow {
-		if err := os.Remove(item); err != nil {
-			fmt.Println(err)
-		}
-	}
-}
+//// 读取文件bytes，保存在当前程序的路径下，并打开
+//func (me *dataStruct) show(pID int) (err error) {
+//	var name string
+//	var ext string
+//	var ok bool
 
-// 使用cmd打开文件和文件夹
-func openFolderFile(path string) error {
-	// 第4个参数，是作为start的title，不加的话有空格的path是打不开的
-	var cmd *exec.Cmd
-	if runtime.GOOS == "windows" {
-		cmd = exec.Command("cmd.exe", "/c", "start", "", path)
-	} else {
-		cmd = exec.Command("open", path)
-	}
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-	return nil
-}
+//	if pID >= len(me.pID) {
+//		return errors.New("不存在的索引。")
+//	}
+//	id := me.pID[pID]
+//	// 先判断是否已经存在了
+//	if name, ok = me.dicShow[id]; !ok {
+//		var stmt *sql.Stmt
+//		if stmt, err = d.db.Prepare("select name,ext,bytes from " + me.tableName + " where id = ?"); err != nil {
+//			return
+//		}
+//		defer stmt.Close()
+
+//		var bi interface{}
+//		if err = stmt.QueryRow(strconv.Itoa(id)).Scan(&name, &ext, &bi); err != nil {
+//			return
+//		}
+//		// 文件保存路径
+//		name = me.fileSavePath + strconv.Itoa(id) + ext
+//		// 读取文件的byte
+//		if b, ok := bi.([]byte); ok {
+//			// 解密byte
+//			if b, err = desDecrypt(b, d.key); err != nil {
+//				return
+//			}
+//			// 保存文件
+//			if err = ioutil.WriteFile(name, b, 0666); err != nil {
+//				return
+//			}
+//			// 记录打开过的，退出时删除
+//			me.dicShow[id] = name
+
+//		}
+
+//	} /* else {
+//		fmt.Println("已经有了")
+//	}*/
+
+//	//	fmt.Println(name)
+//	return openFolderFile(name)
+//}
