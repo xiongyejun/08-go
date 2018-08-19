@@ -1,15 +1,14 @@
 package main
 
 import (
-	"os"
-
 	"fmt"
+	"pkgMyPkg/colorPrint"
 )
 
 func main() {
-	for k, str := range os.Environ() {
-		fmt.Println(k, str)
-	}
+	colorPrint.SetColor(colorPrint.White, colorPrint.DarkCyan)
 
-	fmt.Println(os.Getenv("USERPROFILE") + "\\Desktop")
+	fmt.Println("test")
+
+	colorPrint.UnSetColor()
 }

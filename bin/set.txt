@@ -1,5 +1,5 @@
 ﻿http://localhost:9090/?strURL=http://www.biquge3.com/&dir=1 UTF-8会加BOM头，第一行无用
-str_patten:=<a href="http://www.biquge3.com/xs/1113333/\d{5,10}\.htm.*?</a>
+str_patten:=<a href="http://www.biquge3.com/xs/1111122/\d{5,10}\.htm.*?</a>
 str_id:=<div id="zjneirong">
 charset:=GB2312
-str_URL:=http://www.biquge3.com/xs/1113333
+str_URL:=http://www.biquge3.com/xs/1111122/
