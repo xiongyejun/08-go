@@ -17,8 +17,9 @@ import (
 
 func init() {
 	d = new(DataStruct)
-	d.DBPath = `E:\VisualStudio2015\Templates\ItemTemplates\扩展性\asldjfldsajfwo`
+	d.DBPath = `E:\VisualStudio2015\Templates\ItemTemplates\扩展性\asldjfldsajfwo2`
 	d.tableName = "files"
+	d.table2Name = "filedata"
 	d.fileSavePath, _ = os.Getwd()
 	d.fileSavePath += string(os.PathSeparator)
 
@@ -86,6 +87,11 @@ func handleCommands(tokens []string) {
 			}
 
 		}
+		// 清理数据库
+	case "clear":
+		if err := d.cls(); err != nil {
+			fmt.Println(err)
+		}
 	case "del":
 		if len(tokens) != 2 {
 			fmt.Println(`输入的命令不正确del <id> -- 删除文件`)
@@ -100,13 +106,12 @@ func handleCommands(tokens []string) {
 		}
 
 	case "ls":
-		cl := colorPrint.NewColorDll()
-		cl.SetColor(colorPrint.White, colorPrint.DarkMagenta)
+		colorPrint.SetColor(colorPrint.White, colorPrint.DarkMagenta)
 
 		if err := d.list(); err != nil {
 			fmt.Println(err)
 		}
-		cl.UnSetColor()
+		colorPrint.UnSetColor()
 
 	case "show":
 		if len(tokens) != 2 {
@@ -157,19 +162,13 @@ func handleCommands(tokens []string) {
 }
 
 func printCmd() {
-	cl := colorPrint.NewColorDll()
-	cl.SetColor(colorPrint.Green, colorPrint.Black)
+	colorPrint.SetColor(colorPrint.Green, colorPrint.Black)
 
-	fmt.Println(`
- Enter following commands to control:
- add -- 添加文件
- del <id> -- 删除文件
- ls -- 查看文件列表
- show <id> -- 打开文件
- rn <id> <newName> -- 重命名
- star <id> <int> -- 标星
- e或者q -- 退出 
- `)
+	fmt.Println(" Enter following commands to control:\r\n" +
+		" add -- 添加文件               del <id> -- 删除文件\r\n" +
+		" ls -- 查看文件列表            show <id> -- 打开文件\r\n" +
+		" rn <id> <newName> -- 重命名   star <id> <int> -- 标星\r\n" +
+		" clear -- 清理数据库           e或者q -- 退出")
 
-	cl.UnSetColor()
+	colorPrint.UnSetColor()
 }
