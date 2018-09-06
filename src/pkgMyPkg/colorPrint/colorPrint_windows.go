@@ -10,7 +10,7 @@ const (
 	DarkBlue
 	DarkGreen
 	DarkCyan
-	DarkReds
+	DarkRed
 	DarkMagenta
 	DarkYellow
 	Gray
