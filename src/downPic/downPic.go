@@ -45,13 +45,18 @@ func main() {
 	}
 
 	fmt.Println(saveTxt)
-	os.RemoveAll(saveTxt)
+	os.Remove(saveTxt)
 	var err1 error
-	if f, err1 = os.OpenFile(saveTxt, os.O_APPEND|os.O_CREATE, 0666); err1 != nil {
+	if f, err1 = os.OpenFile(saveTxt, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err1 != nil {
 		fmt.Println(err1)
 		return
 	}
-	f.WriteString(`<p>` + os.Args[2] + `-` + os.Args[3] + `</p>`)
+	defer f.Close()
+
+	if _, err1 = f.WriteString(`<p>` + os.Args[2] + `-` + os.Args[3] + `</p>`); err1 != nil {
+		fmt.Println(err1)
+		return
+	}
 	// 记录下上次的页面
 
 	var url string = `https://www.haha.mx/topic/1/new/`
@@ -73,7 +78,10 @@ func main() {
 				return
 			} else {
 				if num >= nimNum {
-					f.WriteString(fmt.Sprintf("<p><a href=\"https://www.haha.mx/topic/1/new/%d\">%2d-%d</a></p><img src=\"https:%s\">", j, iCount, num, d))
+					if _, err1 = f.WriteString(fmt.Sprintf("<p><a href=\"https://www.haha.mx/topic/1/new/%d\">%2d-%d</a></p><img src=\"https:%s\">", j, iCount, num, d)); err1 != nil {
+						fmt.Println(err1)
+						return
+					}
 					fmt.Printf("\rOK%4d", iCount)
 					iCount++
 				}
