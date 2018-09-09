@@ -4,14 +4,24 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"runtime"
 	"strconv"
 
 	"github.com/opesun/goquery"
 )
 
-var saveTxt string = os.Getenv("USERPROFILE") + `\Desktop\pic.html`
+var strSep string = string(os.PathSeparator)
+var saveTxt string
 var iCount int = 0
 var f *os.File // 保存的文件，只需要写入网页代码
+
+func init() {
+	if runtime.GOOS == "darwin" {
+		saveTxt = os.Getenv("HOME") + strSep + `Desktop` + strSep + `pic.html`
+	} else if runtime.GOOS == "windows" {
+		saveTxt = os.Getenv("USERPROFILE") + strSep + `Desktop` + strSep + `pic.html`
+	}
+}
 
 func main() {
 	fmt.Println("downPic <点赞num> <from> <to>")
@@ -72,6 +82,7 @@ func main() {
 		}
 	}
 
+	fmt.Println()
 }
 
 func getNum(strHtml string) (num int, err error) {
