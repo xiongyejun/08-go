@@ -59,6 +59,7 @@ func init() {
 
 }
 
+// http://www.bjlot.com/ssm/sf/report230.shtml -- 总进球数
 func main() {
 	defer pause()
 	var err error
