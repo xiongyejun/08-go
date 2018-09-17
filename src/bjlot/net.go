@@ -62,6 +62,8 @@ type datas struct {
 }
 
 func (me *datas) getData(url string) (err error) {
+	//	println(url)
+
 	resp := new(http.Response)
 	if resp, err = http.Get(url); err != nil {
 		return

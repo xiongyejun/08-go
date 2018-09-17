@@ -43,7 +43,7 @@ var d *dataStruct
 func init() {
 	d = new(dataStruct)
 	d.year = new(dataStructItem)
-	d.year.url = `http://www.bjlot.com/data/230/control/drawyearlist.js`
+	d.year.url = `http://www.bjlot.com/data/200/control/drawyearlist.js`
 	d.year.attr = "drawyears"
 	d.year.attrItem = "year"
 
@@ -59,7 +59,7 @@ func init() {
 
 }
 
-// http://www.bjlot.com/ssm/sf/report230.shtml -- 总进球数
+// http://www.bjlot.com/ssm/sf/report200.shtml -- 胜平负
 func main() {
 	defer pause()
 	var err error
@@ -76,6 +76,7 @@ func main() {
 		d.recordYearmonth = "000000"
 		d.recordDrawno = make(map[int]int)
 	}
+	//	d.recordYearmonth = "201809"
 	d.recordYear = d.recordYearmonth[:4]
 
 	// 获取要下载的drawno列表
@@ -103,7 +104,7 @@ func main() {
 
 				d.data = new(datas)
 				// 下载网页数据
-				if err := d.data.getData(`http://www.bjlot.com/data/230/draw/` + d.drawno[i].rets[j] + `.js`); err != nil {
+				if err := d.data.getData(`http://www.bjlot.com/data/200/draw/` + d.drawno[i].rets[j] + `.js`); err != nil {
 					fmt.Println("\r\n从网页读取数据出错：", err)
 					return
 				}
@@ -306,7 +307,7 @@ func getDrawno() (err error) {
 	d.month = make([]*dataStructItem, len(d.year.rets))
 	for i := range d.month {
 		d.month[i] = new(dataStructItem)
-		d.month[i].url = `http://www.bjlot.com/data/230/control/` + d.year.rets[i] + `.js`
+		d.month[i].url = `http://www.bjlot.com/data/200/control/` + d.year.rets[i] + `.js`
 		d.month[i].attr = "monthlist"
 		d.month[i].attrItem = "month"
 
@@ -333,7 +334,7 @@ func getDrawno() (err error) {
 	d.drawno = make([]*dataStructItem, len(d.yearmonth))
 	for i := range d.yearmonth {
 		d.drawno[i] = new(dataStructItem)
-		d.drawno[i].url = `http://www.bjlot.com/data/230/control/drawnolist_` + d.yearmonth[i] + `.js`
+		d.drawno[i].url = `http://www.bjlot.com/data/200/control/drawnolist_` + d.yearmonth[i] + `.js`
 		d.drawno[i].attr = "drawnolist"
 		d.drawno[i].attrItem = "drawno"
 
