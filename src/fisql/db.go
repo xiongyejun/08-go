@@ -61,7 +61,7 @@ func (me *DataStruct) getDB() (err error) {
 			if _, err = d.db.Exec(sqlStmt); err != nil {
 				return
 			} else {
-				fmt.Println("成功创建files数据库。")
+				fmt.Println("成功创建filedata数据库。")
 				return nil
 			}
 		}
@@ -80,7 +80,9 @@ func (me *DataStruct) insert(filesPath []string) (err error) {
 	defer stmt.Close()
 
 	if err = stmt.QueryRow().Scan(&file_id); err != nil {
-		if err.Error() != "sql: no rows in result set" {
+		if err.Error() == `sql: Scan error on column index 0: converting driver.Value type <nil> ("<nil>") to a int: invalid syntax` {
+
+		} else if err.Error() != "sql: no rows in result set" {
 			return
 		}
 	}
@@ -278,7 +280,7 @@ func (me *DataStruct) show(pID int) (err error) {
 		var file_index_tmp int
 		// 保存文件
 		var file_append *os.File
-		if file_append, err = os.OpenFile(name, os.O_APPEND|os.O_CREATE, 0644); err != nil {
+		if file_append, err = os.OpenFile(name, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666); err != nil {
 			return
 		}
 		defer file_append.Close()
@@ -343,7 +345,7 @@ func openFolderFile(path string) error {
 	if runtime.GOOS == "windows" {
 		cmd = exec.Command("cmd.exe", "/c", "start", "", path)
 	} else {
-		cmd = exec.Command("open", path)
+		cmd = exec.Command("open", "-a", "/Applications/暴风影音.app", path)
 	}
 	if err := cmd.Start(); err != nil {
 		return err
