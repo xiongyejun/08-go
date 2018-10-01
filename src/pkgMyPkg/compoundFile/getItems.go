@@ -16,8 +16,6 @@ import (
 //}
 // [6]DataSpaces\DataSpaceInfo\streamName
 
-var cp *colorPrint.ColorDll
-
 func (me *CompoundFile) GetStream(streamPath string) (b []byte, err error) {
 	var s *Storage = me.Root
 	var arr []string = strings.Split(streamPath, `\`)
@@ -39,14 +37,13 @@ func (me *CompoundFile) GetStream(streamPath string) (b []byte, err error) {
 }
 
 func (me *CompoundFile) PrintOut() {
-	cp = colorPrint.NewColorDll()
 	me.printOut(me.Root, "")
 }
 
 func (me *CompoundFile) printOut(s *Storage, strPre string) {
-	cp.SetColor(colorPrint.White, colorPrint.DarkYellow)
+	colorPrint.SetColor(colorPrint.White, colorPrint.DarkYellow)
 	fmt.Printf("%s%s [Storage]\r\n", strPre, getPrintString(s.dir.name))
-	cp.UnSetColor()
+	colorPrint.UnSetColor()
 
 	for i := range s.Storages {
 		//		fmt.Printf("%s%s\r\n", strPre+"--", s.Storages[i].dir.name)

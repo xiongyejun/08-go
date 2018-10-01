@@ -19,7 +19,6 @@ type filebyte struct {
 }
 
 var fb *filebyte
-var cd *colorPrint.ColorDll
 
 const N_READ = 512 // 每次读取的byte个数
 
@@ -52,7 +51,7 @@ func main() {
 		fb.f(b[:n], &iNo)
 	}
 
-	cd.UnSetColor()
+	colorPrint.UnSetColor()
 }
 
 func printOutPause(b []byte, p_iNo *int) {
@@ -62,10 +61,10 @@ func printOutPause(b []byte, p_iNo *int) {
 		return
 	}
 	var c string
-	cd.SetColor(colorPrint.White, colorPrint.Red)
+	colorPrint.SetColor(colorPrint.White, colorPrint.Red)
 	fmt.Print("\r\npause ")
 	fmt.Scan(&c)
-	cd.UnSetColor()
+	colorPrint.UnSetColor()
 	fmt.Print("\r\n")
 
 	if c == "e" || c == "q" {
@@ -74,11 +73,11 @@ func printOutPause(b []byte, p_iNo *int) {
 }
 
 func printOut(b []byte, p_iNo *int) {
-	cd.SetColor(colorPrint.White, colorPrint.DarkMagenta)
+	colorPrint.SetColor(colorPrint.White, colorPrint.DarkMagenta)
 	fmt.Printf("   index % X ------ASCII-----", []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
 	//	fmt.Print(strings.Repeat("-", 8+16*3+16+1))
 
-	cd.SetColor(colorPrint.White, colorPrint.DarkCyan)
+	colorPrint.SetColor(colorPrint.White, colorPrint.DarkCyan)
 	fmt.Print("\r\n")
 
 	var str []string = make([]string, 0, N_READ/16)
@@ -124,5 +123,4 @@ func init() {
 	} else {
 		fb.f = printOutPause
 	}
-	cd = colorPrint.NewColorDll()
 }

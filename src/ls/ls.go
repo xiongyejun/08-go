@@ -27,7 +27,6 @@ type ls struct {
 	chanDir  chan string  // 控制搜索
 	chanFile chan outType // 控制输出
 
-	cd          *colorPrint.ColorDll
 	dicExtColor map[string]uintptr
 }
 
@@ -58,7 +57,6 @@ func main() {
 
 	go l.scanDir(l.dir)
 
-	l.cd = colorPrint.NewColorDll()
 	l.initExtColor()
 
 	go l.printOut()
@@ -148,19 +146,19 @@ func (this *ls) printOut() {
 	for f := range this.chanFile {
 		if f.isDir {
 			this.numDir++
-			this.cd.SetColor(colorPrint.Black, colorPrint.Yellow)
+			colorPrint.SetColor(colorPrint.Black, colorPrint.Yellow)
 			fmt.Printf("%6s\t%s", "<DIR>", f.name)
 		} else {
 			this.numFile++
 			strExtension := path.Ext(f.name)
 			if v, ok := this.dicExtColor[strExtension]; ok {
-				this.cd.SetColor(colorPrint.White, v)
+				colorPrint.SetColor(colorPrint.White, v)
 			}
 			fmt.Printf("%.2fmb\t%s", float64(f.size)/KB_TO_B/KB_TO_B, f.name)
 			this.totalSize += f.size
 		}
 
-		this.cd.UnSetColor()
+		colorPrint.UnSetColor()
 		fmt.Printf("\r\n") // 回车要这里输，在前面输了下一行的空白也有颜色，不知道为什么
 	}
 }
