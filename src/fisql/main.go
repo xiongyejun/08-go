@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"pkgAPI/comdlg32"
+	//	"pkgAPI/comdlg32"
 	"pkgMyPkg/colorPrint"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -17,7 +17,7 @@ import (
 
 func init() {
 	d = new(DataStruct)
-	d.DBPath = `E:\VisualStudio2015\Templates\ItemTemplates\扩展性\asldjfldsajfwo2`
+	d.DBPath = `/Users/xiongyejun/Documents/Visual Studio 2010/Backup Files/ConsoleApplication1/asldjfldsajfwo2`
 	d.tableName = "files"
 	d.table2Name = "filedata"
 	d.fileSavePath, _ = os.Getwd()
@@ -78,15 +78,16 @@ func checkKey(key []byte) bool {
 func handleCommands(tokens []string) {
 	switch tokens[0] {
 	case "add":
-		fd := comdlg32.NewFileDialog()
-		if b, err := fd.GetOpenFileNames(); !b || err != nil {
-			fmt.Println(b, err)
-		} else {
-			if err := d.insert(fd.FilePaths); err != nil {
-				fmt.Println(err)
-			}
-
+		if len(tokens) != 2 {
+			fmt.Println("add <filePath>")
+			return
 		}
+		files := make([]string, 0)
+		files = append(files, tokens[1])
+		if err := d.insert(files); err != nil {
+			fmt.Println(err)
+		}
+
 		// 清理数据库
 	case "clear":
 		if err := d.cls(); err != nil {
@@ -164,11 +165,11 @@ func handleCommands(tokens []string) {
 func printCmd() {
 	colorPrint.SetColor(colorPrint.Green, colorPrint.Black)
 
-	fmt.Println(" Enter following commands to control:\r\n" +
-		" add -- 添加文件               del <id> -- 删除文件\r\n" +
-		" ls -- 查看文件列表            show <id> -- 打开文件\r\n" +
-		" rn <id> <newName> -- 重命名   star <id> <int> -- 标星\r\n" +
-		" clear -- 清理数据库           e或者q -- 退出")
+	fmt.Println(" Enter following commands to control:\n" +
+		" add <filePath>-- 添加文件          del <id> -- 删除文件\n" +
+		" ls -- 查看文件列表                        show <id> -- 打开文件\n" +
+		" rn <id> <newName> -- 重命名   star <id> <int> -- 标星\n" +
+		" clear -- 清理数据库                       e或者q -- 退出")
 
 	colorPrint.UnSetColor()
 }
