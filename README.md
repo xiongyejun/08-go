@@ -29,4 +29,4 @@
 - [excel](https://github.com/aswjh/excel)
 - [go-sqlite3](http://godoc.org/github.com/mattn/go-sqlite3 "go-sqlite3")
 https://github.com/andlabs/ui
-- [鼠标键盘](https://github.com/go-vgo/robotgo "鼠标键盘")
+- [鼠标键盘截图等](https://github.com/go-vgo/robotgo "鼠标键盘截图等")
