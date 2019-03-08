@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"runtime"
 	"strconv"
+	"strings"
 
 	"github.com/opesun/goquery"
 )
@@ -67,18 +68,18 @@ func main() {
 			fmt.Println(err)
 			return
 		}
-		t := p.Find(".joke-main-img")
+		t := p.Find(".joke-main-img-suspend")
 		t2 := p.Find(".joke-list-item-footer")
 
 		for i := 0; i < t.Length(); i++ {
-			d := t.Eq(i).Attr("src")
+			d := t.Eq(i).Attr("data-original")
 			d2 := t2.Eq(i).Html()
 			if num, err := getNum(d2); err != nil {
 				fmt.Println(err)
 				return
 			} else {
 				if num >= nimNum {
-					if _, err1 = f.WriteString(fmt.Sprintf("<p><a href=\"https://www.haha.mx/topic/1/new/%d\">%2d-%d</a></p><img src=\"https:%s\">", j, iCount, num, d)); err1 != nil {
+					if _, err1 = f.WriteString(fmt.Sprintf("\r\n\r\n<p><a href=\"https://www.haha.mx/topic/1/new/%d\">%2d-%d</a></p><img src=\"https:%s\">", j, iCount, num, strings.Replace(d, "normal", "middle", -1))); err1 != nil {
 						fmt.Println(err1)
 						return
 					}

@@ -1,4 +1,4 @@
-# go
+﻿# go
 
 # 编译压缩体积 #
 
@@ -29,3 +29,4 @@
 - [excel](https://github.com/aswjh/excel)
 - [go-sqlite3](http://godoc.org/github.com/mattn/go-sqlite3 "go-sqlite3")
 https://github.com/andlabs/ui
+- [鼠标键盘截图等](https://github.com/go-vgo/robotgo "鼠标键盘截图等")
