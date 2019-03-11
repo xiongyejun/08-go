@@ -76,7 +76,7 @@ func main() {
 		d.recordYearmonth = "000000"
 		d.recordDrawno = make(map[int]int)
 	}
-	//	d.recordYearmonth = "201809"
+	d.recordYearmonth = "201809"
 	d.recordYear = d.recordYearmonth[:4]
 
 	// 获取要下载的drawno列表
