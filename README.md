@@ -12,6 +12,11 @@
 
 	rsrc.exe -manifest ico.manifest -o myapp.syso -ico myapp.ico
 
+# 查看汇编代码 #
+
+	go tool compile -S main.go >> main.S
+
+
 # 学习资源 #
 
 - [A golang ebook intro how to build a web with golang](https://github.com/astaxie/build-web-application-with-golang)
@@ -31,3 +36,6 @@
 https://github.com/andlabs/ui
 - [鼠标键盘截图等](https://github.com/go-vgo/robotgo "鼠标键盘截图等")
 - [用Go开发可以内网活跃主机嗅探器](https://studygolang.com/articles/11517 "用Go开发可以内网活跃主机嗅探器")
+- [Go标准库所有方法使用例子](https://github.com/zc2638/go-standard "Go标准库所有方法使用例子")
+- [免费的编程中文书籍索引](https://github.com/justjavac/free-programming-books-zh_CN "免费的编程中文书籍索引")
+- [go知识图谱](https://www.processon.com/view/link/5a9ba4c8e4b0a9d22eb3bdf0#map "go知识图谱")
