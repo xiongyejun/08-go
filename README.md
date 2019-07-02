@@ -39,4 +39,4 @@ https://github.com/andlabs/ui
 - [Go标准库所有方法使用例子](https://github.com/zc2638/go-standard "Go标准库所有方法使用例子")
 - [免费的编程中文书籍索引](https://github.com/justjavac/free-programming-books-zh_CN "免费的编程中文书籍索引")
 - [go知识图谱](https://www.processon.com/view/link/5a9ba4c8e4b0a9d22eb3bdf0#map "go知识图谱")
-- [go操作excel(https://github.com/360EntSecGroup-Skylar/excelize "go操作excel")
+- [go操作excel](https://github.com/360EntSecGroup-Skylar/excelize "go操作excel")
