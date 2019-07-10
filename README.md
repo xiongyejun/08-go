@@ -41,3 +41,4 @@ https://github.com/andlabs/ui
 - [go知识图谱](https://www.processon.com/view/link/5a9ba4c8e4b0a9d22eb3bdf0#map "go知识图谱")
 - [go操作excel](https://github.com/360EntSecGroup-Skylar/excelize "go操作excel")
 - [go操作office](https://github.com/unidoc/unioffice "go操作office")
+- [算法学习等](https://github.com/studygolang/leetcode "算法学习等")
