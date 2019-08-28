@@ -62,6 +62,7 @@
 接口在golang中的实现比较复杂，在$GOROOT/src/runtime/type.h中定义了：
    
    // 记录着Go语言中某个数据类型的基本特征
+   
     struct Type
     {
         uintptr size;
