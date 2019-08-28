@@ -59,8 +59,9 @@
     };
 
 ## interface
-接口在golang中的实现比较复杂，在$GOROOT/src/pkg/runtime/type.h中定义了：
+接口在golang中的实现比较复杂，在$GOROOT/src/runtime/type.h中定义了：
    
+   // 记录着Go语言中某个数据类型的基本特征
     struct Type
     {
         uintptr size;
@@ -76,14 +77,16 @@
         Type *ptrto;
     };
     
-在$GOROOT/src/pkg/runtime/runtime.h中定义了：
+在$GOROOT/src/runtime/runtime.h中定义了：
 
+    // 有方法的interface
     struct Iface
     {
         Itab*   tab;
         void*   data;
     };
     
+    // 没有方法的interface
     struct Eface
     {
         Type*   type;
@@ -100,12 +103,18 @@
         void    (*fun[])(void);
     };
     
+    // interface数据类型对应的type
+    type interfacetype struct {
+        typ     _type
+        pkgpath name
+        mhdr    []imethod
+    }
 
 interface实际上是一个结构体，包括两个成员，一个是指向数据的指针，一个包含了成员的类型信息。Eface是interface{}底层使用的数据结构。因为interface中保存了类型信息，所以可以实现反射。反射其实就是查找底层数据结构的元数据。完整的实现在：$GOROOT/src/pkg/runtime/iface.c 。
 
 ## map
 
-golang的map实现是hashtable，源码在：$GOROOT/src/pkg/runtime/hashmap.c 。
+golang的map实现是hashtable，源码在：$GOROOT/src/runtime/hashmap.c 。
 
     struct Hmap
     {
