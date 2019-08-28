@@ -122,9 +122,20 @@ golang的map实现是hashtable，源码在：$GOROOT/src/pkg/runtime/hashmap.c �
         uintptr nevacuate;
     };
     
+    
+## unsafe.Pointer：通用指针类型，用于转换不同类型的指针，不能进行指针运算。
+
+- unsafe.Pointer 可以和 普通指针 进行相互转换。
+- unsafe.Pointer 可以和 uintptr 进行相互转换。
+
+也就是说 unsafe.Pointer 是桥梁，可以让任意类型的指针实现相互转换，也可以将任意类型的指针转换为 uintptr 进行指针运算。
+  
+  
 ## uintptr
 
 在golang中uintptr的定义是 type uintptr uintptr uintptr是golang的内置类型，是能存储指针的整型
+
+用于指针运算，GC 不把 uintptr 当指针，uintptr 无法持有对象。uintptr 类型的目标会被回收。
 - 一个unsafe.Pointer是一个指向变量的指针
 - 但是uintptr类型的临时变量只是一个普通的数字
 - 作为变量的uintptr虽然记录的是1个指针地址，但是它只是1个普通的数字，所以指向的地址很有可能被GC回收，这个无效地址空间的赋值语句将彻底摧毁整个程序！
