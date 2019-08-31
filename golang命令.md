@@ -1,13 +1,68 @@
-﻿# build mode
+﻿# golang命令
 
 标签（空格分隔）： go cmd 命令
 
 ---
 
+# go build
+- -gcflags: 传递给编译器的参数
+- -ldflags: 传递给链接器的参数
+- -work: 查看编译临时目录
+- -race: 允许数据竞争检测(仅支持amd64)
+- -n: 查看但不执行编译指令
+- -x: 查看并执行编译命令
+- -a: 强制重新编译所有依赖包
+- -v: 查看被编译的包名，包括依赖包
+- -p n:并行编译所使用的CPU数，默认为全部
+- -o:输出文件名
+ 
+## gcflags:
+
+- -B 禁用边界检查
+- -N 禁用优化
+- -l 禁用函数内联
+- -u 禁用unsafe代码
+- -m 输出优化信息
+- -S 输出汇编代码
+ 
+
+## ldflags:
+
+- -w 禁用DRAWF调试信息，但不包括符号表
+- -s 禁用符号表
+- -X 修改字符串符号值  -X main.VER ‘0.99’  -X main.S ‘abc’
+- -H 链接文件类型，其中包括windowsgui.   cmd/ld/doc.go
+
+
+# go clean
+
+- -n 查看但不执行清理命令
+- -x 查看并执行清理命令
+- -i 删除bin,pkg目录下的二进制文件
+- -r 清理所有依赖包临时目录
+
+# go get
+
+- -d 仅下载，不执行安装命令
+- -t 下载测试所需依赖包
+- -u 更新包包括其依赖
+- -v 查看并执行命令
+
+
+# go tool
+
+- go tool objdump
+反汇编可执行文件
+go tool objdump -s “main\.\w+” test
+
+- go tool compile -S main.go
+查看汇编代码
+
+
+
+
+# Build Mode
 [原文][1]
-
-## 什么是 Build Mode？
-
 build mode 用于指导编译器如何创建可执行二进制文件。越多的执行方式，就意味着可以让 Go 程序运行于更多的位置。
 
 ## Go 的八种 Build Mode
