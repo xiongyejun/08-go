@@ -1,4 +1,4 @@
-﻿# go
+# go
 
 # 编译压缩体积 #
 
@@ -42,3 +42,4 @@ https://github.com/andlabs/ui
 - [go操作excel](https://github.com/360EntSecGroup-Skylar/excelize "go操作excel")
 - [go操作office](https://github.com/unidoc/unioffice "go操作office")
 - [算法学习等](https://github.com/studygolang/leetcode "算法学习等")
+- [生成pdf](https://github.com/tiechui1994/gopdf "生成pdf")
